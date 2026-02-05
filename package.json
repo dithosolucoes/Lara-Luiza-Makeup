@@ -1,3 +1,4 @@
+
 {
   "name": "lara-luíza-makeup---ultra-premium-portfolio",
   "private": true,
@@ -12,7 +13,8 @@
     "lucide-react": "^0.562.0",
     "react-dom": "^19.2.3",
     "react": "^19.2.3",
-    "framer-motion": "^12.23.26"
+    "framer-motion": "^12.23.26",
+    "@supabase/supabase-js": "^2.48.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
