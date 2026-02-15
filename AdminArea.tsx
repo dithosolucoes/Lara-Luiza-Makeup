@@ -192,7 +192,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                   <Settings size={14} /> Instruções Vercel
                 </h4>
                 <p className="text-xs text-white/50 leading-relaxed">
-                  Para configurar um novo domínio, acesse o painel da Vercel, vá em Settings > Domains e adicione seu novo endereço. Os registros acima devem ser atualizados no seu provedor de DNS (ex: Registro.br).
+                  Para configurar um novo domínio, acesse o painel da Vercel, vá em Settings &gt; Domains e adicione seu novo endereço. Os registros acima devem ser atualizados no seu provedor de DNS (ex: Registro.br).
                 </p>
               </div>
             </div>
