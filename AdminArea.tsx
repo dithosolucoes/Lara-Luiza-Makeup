@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Image as ImageIcon, FileText, 
@@ -8,8 +8,11 @@ import {
   Palette, Type, Layout, Smartphone, Monitor, Eye,
   CheckCircle2, X, Shield, Sparkles, GraduationCap,
   MapPin, MessageCircle, Link as LinkIcon, List,
-  Menu, PenTool
+  Menu, PenTool, Edit, ArrowUp, ArrowDown, Loader2
 } from 'lucide-react';
+import { useContent } from './ContentContext';
+import { Service, Testimonial, FaqItem, NavItem, GalleryImage } from './types';
+import { supabase } from './App';
 
 interface AdminProps {
   onLogout: () => void;
@@ -30,21 +33,198 @@ type EditorSection =
   | 'location'
   | 'footer';
 
+const GalleryManager = ({ content, updateContent }: { content: any, updateContent: any }) => {
+    const [filter, setFilter] = useState('all');
+    const [isDragging, setIsDragging] = useState(false);
+    const [uploading, setUploading] = useState(false);
+
+    const filteredImages = filter === 'all' 
+        ? content.artLab.galleryImages 
+        : content.artLab.galleryImages.filter((img: any) => img.category === filter);
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        const newImages = [];
+
+        for (const file of files) {
+            if (!file.type.startsWith('image/')) continue;
+
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('portfolio-images')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data } = supabase.storage
+                    .from('portfolio-images')
+                    .getPublicUrl(filePath);
+
+                newImages.push({
+                    url: data.publicUrl,
+                    title: 'Nova Foto',
+                    desc: '',
+                    category: filter === 'all' ? 'artisticas' : filter // Auto-assign current filter category
+                });
+            } catch (error) {
+                console.error('Upload error:', error);
+            }
+        }
+
+        if (newImages.length > 0) {
+            updateContent('artLab', { galleryImages: [...content.artLab.galleryImages, ...newImages] });
+        }
+        setUploading(false);
+    };
+
+    const handleDelete = (indexToDelete: number) => {
+        // Find the actual index in the main array, not the filtered one
+        const imageToDelete = filteredImages[indexToDelete];
+        const realIndex = content.artLab.galleryImages.findIndex((img: any) => img === imageToDelete);
+        
+        if (realIndex === -1) return;
+
+        if (confirm('Tem certeza que deseja excluir esta foto?')) {
+            const newImages = content.artLab.galleryImages.filter((_: any, i: number) => i !== realIndex);
+            updateContent('artLab', { galleryImages: newImages });
+        }
+    };
+
+    const handleCategoryChange = (indexToEdit: number, newCategory: string) => {
+        const imageToEdit = filteredImages[indexToEdit];
+        const realIndex = content.artLab.galleryImages.findIndex((img: any) => img === imageToEdit);
+        
+        if (realIndex === -1) return;
+
+        const newImages = [...content.artLab.galleryImages];
+        newImages[realIndex] = { ...newImages[realIndex], category: newCategory };
+        updateContent('artLab', { galleryImages: newImages });
+    };
+
+    return (
+        <div className="h-full flex flex-col">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+                <div>
+                    <h2 className="text-3xl font-serif text-white italic mb-2">Galeria de Fotos</h2>
+                    <p className="text-white/40 text-xs uppercase tracking-widest">Gerencie seu portfólio visual</p>
+                </div>
+                
+                <div className="flex bg-brand-charcoal p-1 rounded-xl border border-white/5">
+                    {['all', 'noivas', 'formandas', 'sociais', 'artisticas'].map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => setFilter(cat)}
+                            className={`px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all ${
+                                filter === cat 
+                                ? 'bg-brand-gold text-brand-dark' 
+                                : 'text-white/40 hover:text-white'
+                            }`}
+                        >
+                            {cat === 'all' ? 'Todas' : cat}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Drag & Drop Zone */}
+            <div 
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`mb-8 border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all ${
+                    isDragging 
+                    ? 'border-brand-gold bg-brand-gold/10 scale-[1.02]' 
+                    : 'border-white/10 bg-brand-dark hover:border-white/20'
+                }`}
+            >
+                {uploading ? (
+                    <div className="flex flex-col items-center animate-pulse">
+                        <Loader2 className="animate-spin text-brand-gold mb-2" size={32} />
+                        <span className="text-xs uppercase tracking-widest text-brand-gold">Enviando fotos...</span>
+                    </div>
+                ) : (
+                    <>
+                        <Upload className={`mb-4 ${isDragging ? 'text-brand-gold' : 'text-white/20'}`} size={32} />
+                        <h4 className="text-white font-serif text-lg mb-1">Arraste fotos para cá</h4>
+                        <p className="text-white/40 text-xs">Ou clique para selecionar (em breve)</p>
+                    </>
+                )}
+            </div>
+
+            {/* Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-20">
+                {filteredImages.map((img: any, idx: number) => (
+                    <div key={idx} className="group relative aspect-square rounded-xl overflow-hidden bg-brand-dark border border-white/5">
+                        <img src={img.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        
+                        {/* Overlay Actions */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+                            <div className="flex justify-end">
+                                <button 
+                                    onClick={() => handleDelete(idx)}
+                                    className="p-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                                    title="Excluir"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                            
+                            <div>
+                                <select 
+                                    value={img.category}
+                                    onChange={(e) => handleCategoryChange(idx, e.target.value)}
+                                    className="w-full bg-black/50 text-white text-[10px] uppercase font-bold border border-white/20 rounded px-2 py-1 outline-none focus:border-brand-gold"
+                                >
+                                    <option value="noivas">Noivas</option>
+                                    <option value="formandas">Formandas</option>
+                                    <option value="sociais">Sociais</option>
+                                    <option value="artisticas">Artísticas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<'dash' | 'editor' | 'media' | 'qr' | 'dns'>('dash');
   const [editorSection, setEditorSection] = useState<EditorSection>('global');
   const [qrValue, setQrValue] = useState('https://laraluizamakeup.com.br');
   const [showSaveToast, setShowSaveToast] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // States for complex list editing
+  const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
+  const [editingGalleryIndex, setEditingGalleryIndex] = useState<number | null>(null);
 
-  // Mock data for lists simulation
-  const [faqItems, setFaqItems] = useState([
-    { q: "Quanto tempo dura a técnica?", a: "Até 16 horas..." },
-    { q: "Atende a domicílio?", a: "Sim, para noivas..." }
-  ]);
+  const { content, updateContent, updateNestedContent, saveToSupabase } = useContent();
 
   const menuItems = [
     { id: 'dash', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'editor', label: 'Editor Full Site', icon: PenTool }, // Changed icon and label
+    { id: 'editor', label: 'Editor Full Site', icon: PenTool },
     { id: 'media', label: 'Galeria/Fotos', icon: ImageIcon },
     { id: 'qr', label: 'QR Codes', icon: QrCode },
     { id: 'dns', label: 'Domínio/DNS', icon: Globe },
@@ -56,9 +236,9 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
     { id: 'hero', label: 'Capa (Hero)', icon: Layout },
     { id: 'concept', label: 'O Conceito', icon: Sparkles },
     { id: 'shield', label: 'Pele Blindada', icon: Shield },
-    { id: 'services', label: 'Serviços', icon: List },
-    { id: 'artlab', label: 'Art Lab', icon: Palette },
-    { id: 'education', label: 'Cursos & Educação', icon: GraduationCap },
+    { id: 'services', label: 'Serviços (Lista)', icon: List },
+    { id: 'artlab', label: 'Art Lab & Galeria', icon: Palette },
+    { id: 'education', label: 'Cursos & Popups', icon: GraduationCap },
     { id: 'about', label: 'Sobre a Lara', icon: FileText },
     { id: 'testimonials', label: 'Depoimentos', icon: MessageCircle },
     { id: 'faq', label: 'Perguntas (FAQ)', icon: CheckCircle2 },
@@ -66,9 +246,17 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
     { id: 'footer', label: 'Rodapé', icon: Type },
   ];
 
-  const handleSave = () => {
-    setShowSaveToast(true);
-    setTimeout(() => setShowSaveToast(false), 3000);
+  const handleSave = async () => {
+    setIsSaving(true);
+    const success = await saveToSupabase();
+    setIsSaving(false);
+    
+    if (success) {
+        setShowSaveToast(true);
+        setTimeout(() => setShowSaveToast(false), 3000);
+    } else {
+        alert("Erro ao salvar. Verifique se você está logado.");
+    }
   };
 
   const renderEditor = () => (
@@ -79,7 +267,11 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
         {editorSectionsList.map((section) => (
           <button
             key={section.id}
-            onClick={() => setEditorSection(section.id as EditorSection)}
+            onClick={() => {
+                setEditorSection(section.id as EditorSection);
+                setEditingServiceIndex(null);
+                setEditingGalleryIndex(null);
+            }}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-xs uppercase tracking-widest font-bold text-left ${
               editorSection === section.id 
                 ? 'bg-white/10 text-brand-gold border border-brand-gold/20' 
@@ -116,19 +308,8 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {editorSection === 'global' && (
                 <>
                     <div className="grid grid-cols-2 gap-6">
-                        <ColorPicker label="Cor Primária (Gold)" value="#D4AF37" />
-                        <ColorPicker label="Cor Secundária (Rose)" value="#E5BDBB" />
-                        <ColorPicker label="Fundo (Dark)" value="#121212" />
-                        <ColorPicker label="Fundo (Charcoal)" value="#1E1E1E" />
-                    </div>
-                    <div className="border-t border-white/5 pt-6">
-                        <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">Fonte de Títulos</label>
-                        <select className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm text-white/80">
-                            <option>Playfair Display (Atual)</option>
-                            <option>Cinzel</option>
-                            <option>Bodoni Moda</option>
-                            <option>Montserrat</option>
-                        </select>
+                        <ColorPicker label="Cor Primária (Gold)" value={content.global.primaryColor} onChange={(v) => updateNestedContent(['global', 'primaryColor'], v)} />
+                        <ColorPicker label="Cor Secundária (Rose)" value={content.global.secondaryColor} onChange={(v) => updateNestedContent(['global', 'secondaryColor'], v)} />
                     </div>
                 </>
             )}
@@ -136,28 +317,84 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 2. NAVBAR */}
             {editorSection === 'navbar' && (
                 <>
-                    <InputGroup label="Nome da Marca (Logo Texto)" value="Lara Luíza" />
-                    <InputGroup label="Subtítulo da Marca" value="Makeup Artist & Educator" />
-                    <InputGroup label="Texto Botão CTA" value="Agendar Agora" />
-                    <InputGroup label="Link Botão CTA" value="https://wa.me/5538992210136" icon={<LinkIcon size={14}/>} />
+                    <InputGroup label="Nome da Marca (Logo Texto)" value={content.navbar.brandName} onChange={(v) => updateNestedContent(['navbar', 'brandName'], v)} />
+                    <InputGroup label="Subtítulo da Marca" value={content.navbar.brandSubtitle} onChange={(v) => updateNestedContent(['navbar', 'brandSubtitle'], v)} />
+                    
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                        <h4 className="text-brand-gold text-xs uppercase font-bold mb-4">Links do Menu</h4>
+                        <div className="space-y-3">
+                            {content.navbar.items.map((item, idx) => (
+                                <div key={idx} className="flex gap-3 items-center bg-brand-dark p-3 rounded-xl border border-white/5">
+                                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold">{idx + 1}</div>
+                                    <div className="flex-1 grid grid-cols-2 gap-3">
+                                        <input 
+                                            type="text" 
+                                            value={item.label}
+                                            onChange={(e) => {
+                                                const newItems = [...content.navbar.items];
+                                                newItems[idx].label = e.target.value;
+                                                updateNestedContent(['navbar', 'items'], newItems);
+                                            }}
+                                            placeholder="Nome"
+                                            className="bg-transparent border-b border-white/10 text-xs p-1 focus:border-brand-gold outline-none"
+                                        />
+                                        <input 
+                                            type="text" 
+                                            value={item.href}
+                                            onChange={(e) => {
+                                                const newItems = [...content.navbar.items];
+                                                newItems[idx].href = e.target.value;
+                                                updateNestedContent(['navbar', 'items'], newItems);
+                                            }}
+                                            placeholder="Link (#secao)"
+                                            className="bg-transparent border-b border-white/10 text-xs p-1 focus:border-brand-gold outline-none text-white/50 font-mono"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            const newItems = content.navbar.items.filter((_, i) => i !== idx);
+                                            updateNestedContent(['navbar', 'items'], newItems);
+                                        }}
+                                        className="p-2 text-white/20 hover:text-red-500 hover:bg-white/5 rounded-lg"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            <button 
+                                onClick={() => {
+                                    const newItems = [...content.navbar.items, { label: 'Novo Link', href: '#' }];
+                                    updateNestedContent(['navbar', 'items'], newItems);
+                                }}
+                                className="w-full py-3 border border-dashed border-white/20 rounded-xl text-white/40 hover:text-brand-gold hover:border-brand-gold hover:bg-brand-gold/5 text-xs uppercase font-bold flex items-center justify-center gap-2"
+                            >
+                                <Plus size={14} /> Adicionar Link
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 pt-6 border-t border-white/5">
+                        <InputGroup label="Texto Botão CTA" value={content.navbar.ctaText} onChange={(v) => updateNestedContent(['navbar', 'ctaText'], v)} />
+                        <InputGroup label="Link Botão CTA" value={content.navbar.ctaLink} onChange={(v) => updateNestedContent(['navbar', 'ctaLink'], v)} icon={<LinkIcon size={14}/>} />
+                    </div>
                 </>
             )}
 
             {/* 3. HERO */}
             {editorSection === 'hero' && (
                 <>
-                    <ImageUpload label="Imagem de Fundo (Desktop)" preview="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=2087&auto=format&fit=crop" />
-                    <ImageUpload label="Imagem de Fundo (Mobile)" preview="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=2087&auto=format&fit=crop" />
-                    <InputGroup label="Título Principal" value="Beleza Natural" />
-                    <InputGroup label="Subtítulo" value="Realçando belezas através da maquiagem" />
+                    <ImageUpload label="Imagem de Fundo" preview={content.hero.bgImage} onChange={(v) => updateNestedContent(['hero', 'bgImage'], v)} />
+                    <InputGroup label="Título Principal" value={content.hero.title} onChange={(v) => updateNestedContent(['hero', 'title'], v)} />
+                    <InputGroup label="Destaque do Título (Rose)" value={content.hero.titleHighlight} onChange={(v) => updateNestedContent(['hero', 'titleHighlight'], v)} />
+                    <InputGroup label="Subtítulo" value={content.hero.subtitle} onChange={(v) => updateNestedContent(['hero', 'subtitle'], v)} />
                     
                     <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
                         <h5 className="text-brand-gold text-xs uppercase font-bold mb-4">Botões de Ação</h5>
                         <div className="grid grid-cols-2 gap-4">
-                            <InputGroup label="Texto Botão 1" value="Ver Portfólio" />
-                            <InputGroup label="Link Botão 1" value="#portfolio" icon={<LinkIcon size={14}/>} />
-                            <InputGroup label="Texto Botão 2" value="Agendar Data" />
-                            <InputGroup label="Link Botão 2" value="https://wa.me/..." icon={<LinkIcon size={14}/>} />
+                            <InputGroup label="Texto Botão 1" value={content.hero.button1Text} onChange={(v) => updateNestedContent(['hero', 'button1Text'], v)} />
+                            <InputGroup label="Link Botão 1" value={content.hero.button1Link} onChange={(v) => updateNestedContent(['hero', 'button1Link'], v)} />
+                            <InputGroup label="Texto Botão 2" value={content.hero.button2Text} onChange={(v) => updateNestedContent(['hero', 'button2Text'], v)} />
+                            <InputGroup label="Link Botão 2" value={content.hero.button2Link} onChange={(v) => updateNestedContent(['hero', 'button2Link'], v)} />
                         </div>
                     </div>
                 </>
@@ -168,25 +405,25 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                 <>
                     <div className="flex gap-4">
                         <div className="w-1/3">
-                            <ImageUpload label="Imagem Lateral" preview="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=2071&auto=format&fit=crop" />
+                            <ImageUpload label="Imagem Lateral" preview={content.concept.image} onChange={(v) => updateNestedContent(['concept', 'image'], v)} />
                         </div>
                         <div className="w-2/3 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <InputGroup label="Número Destaque" value="+8" />
-                                <InputGroup label="Texto Destaque" value="Anos de Experiência" />
+                                <InputGroup label="Número Destaque" value={content.concept.yearsNumber} onChange={(v) => updateNestedContent(['concept', 'yearsNumber'], v)} />
+                                <InputGroup label="Texto Destaque" value={content.concept.yearsText} onChange={(v) => updateNestedContent(['concept', 'yearsText'], v)} />
                             </div>
-                            <InputGroup label="Título da Seção" value="A BELEZA DE SER VOCÊ." />
-                            <TextAreaGroup label="Texto do Conceito" value="Referência em Belo Horizonte, Lara Luiza Castro construiu sua trajetória combinando técnica apurada..." height="h-32" />
+                            <InputGroup label="Título da Seção" value={content.concept.title} onChange={(v) => updateNestedContent(['concept', 'title'], v)} />
+                            <TextAreaGroup label="Texto do Conceito" value={content.concept.description} onChange={(v) => updateNestedContent(['concept', 'description'], v)} height="h-32" />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 border-t border-white/5 pt-4">
                          <div>
-                            <InputGroup label="Diferencial 1 - Título" value="Efeito Glow" />
-                            <TextAreaGroup label="Diferencial 1 - Desc" value="Luminosidade estratégica para fotos e vídeos." height="h-20" />
+                            <InputGroup label="Diferencial 1 - Título" value={content.concept.diff1Title} onChange={(v) => updateNestedContent(['concept', 'diff1Title'], v)} />
+                            <TextAreaGroup label="Diferencial 1 - Desc" value={content.concept.diff1Desc} onChange={(v) => updateNestedContent(['concept', 'diff1Desc'], v)} height="h-20" />
                          </div>
                          <div>
-                            <InputGroup label="Diferencial 2 - Título" value="Durabilidade" />
-                            <TextAreaGroup label="Diferencial 2 - Desc" value="Produtos de excelência para um resultado impecável." height="h-20" />
+                            <InputGroup label="Diferencial 2 - Título" value={content.concept.diff2Title} onChange={(v) => updateNestedContent(['concept', 'diff2Title'], v)} />
+                            <TextAreaGroup label="Diferencial 2 - Desc" value={content.concept.diff2Desc} onChange={(v) => updateNestedContent(['concept', 'diff2Desc'], v)} height="h-20" />
                          </div>
                     </div>
                 </>
@@ -195,24 +432,35 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 5. SHIELD (PELE BLINDADA) */}
             {editorSection === 'shield' && (
                 <>
-                    <InputGroup label="Título da Seção" value="A Lendária Pele Blindada" />
-                    <InputGroup label="Subtítulo" value="Exclusividade Técnica" />
-                    <InputGroup label="Frase de Impacto (Quote)" value="Chore, dance, abrace. Sua beleza permanecerá intacta até o último minuto." />
+                    <InputGroup label="Título da Seção" value={content.shield.title} onChange={(v) => updateNestedContent(['shield', 'title'], v)} />
+                    <InputGroup label="Subtítulo" value={content.shield.subtitle} onChange={(v) => updateNestedContent(['shield', 'subtitle'], v)} />
+                    <InputGroup label="Frase de Impacto (Quote)" value={content.shield.quote} onChange={(v) => updateNestedContent(['shield', 'quote'], v)} />
                     
                     <h5 className="text-brand-gold text-xs uppercase font-bold mt-6 mb-2">Cards de Resistência</h5>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
-                            <InputGroup label="Card 1 - Título" value="À prova de lágrimas" />
-                            <TextAreaGroup label="Card 1 - Desc" value="Sua emoção não marca seu rosto." height="h-20" />
-                        </div>
-                        <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
-                            <InputGroup label="Card 2 - Título" value="Suor & Calor" />
-                            <TextAreaGroup label="Card 2 - Desc" value="Impecável mesmo no auge da pista." height="h-20" />
-                        </div>
-                        <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
-                            <InputGroup label="Card 3 - Título" value="Atrito zero" />
-                            <TextAreaGroup label="Card 3 - Desc" value="Livre para abraçar quem você ama." height="h-20" />
-                        </div>
+                        {content.shield.cards.map((card, idx) => (
+                           <div key={idx} className="p-4 bg-brand-dark rounded-xl border border-white/5">
+                                <InputGroup 
+                                    label={`Card ${idx+1} - Título`} 
+                                    value={card.title} 
+                                    onChange={(v) => {
+                                        const newCards = [...content.shield.cards];
+                                        newCards[idx].title = v;
+                                        updateNestedContent(['shield', 'cards'], newCards);
+                                    }} 
+                                />
+                                <TextAreaGroup 
+                                    label={`Card ${idx+1} - Desc`} 
+                                    value={card.desc} 
+                                    onChange={(v) => {
+                                        const newCards = [...content.shield.cards];
+                                        newCards[idx].desc = v;
+                                        updateNestedContent(['shield', 'cards'], newCards);
+                                    }} 
+                                    height="h-20" 
+                                />
+                            </div> 
+                        ))}
                     </div>
                 </>
             )}
@@ -220,72 +468,256 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 6. SERVICES (LIST) */}
             {editorSection === 'services' && (
                 <div className="space-y-4">
-                    <InputGroup label="Título da Seção" value="Experiências de Transformação" />
+                    <InputGroup label="Título da Seção" value={content.services.title} onChange={(v) => updateNestedContent(['services', 'title'], v)} />
                     
-                    <div className="mt-8">
-                        <div className="flex justify-between items-center mb-4">
-                            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Lista de Serviços</label>
-                            <button className="text-xs text-brand-gold uppercase font-bold flex items-center gap-1 hover:text-white transition-colors">
-                                <Plus size={14} /> Adicionar Serviço
+                    {editingServiceIndex === null ? (
+                        <div className="mt-8">
+                            <div className="flex justify-between items-center mb-4">
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Lista de Serviços</label>
+                            </div>
+                            <div className="space-y-3">
+                                {content.services.items.map((service, idx) => (
+                                    <div key={idx} className="p-4 bg-brand-dark rounded-xl border border-white/5 flex gap-4 items-center group hover:border-brand-gold/30 transition-colors">
+                                        <div className="w-16 h-16 bg-white/5 rounded-lg overflow-hidden shrink-0">
+                                            <img src={service.image} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h4 className="font-serif text-white">{service.title}</h4>
+                                            <p className="text-[10px] text-white/40 uppercase mt-1 line-clamp-1">{service.description}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => setEditingServiceIndex(idx)}
+                                                className="p-2 text-white/40 hover:text-brand-gold"
+                                            >
+                                                <Edit size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-brand-dark p-6 rounded-2xl border border-white/10 mt-6 relative animate-in fade-in slide-in-from-bottom-4">
+                            <button 
+                                onClick={() => setEditingServiceIndex(null)}
+                                className="absolute top-4 right-4 text-xs uppercase font-bold text-white/40 hover:text-white"
+                            >
+                                Cancelar
                             </button>
+                            <h4 className="font-serif text-xl mb-6 text-brand-gold">Editando Serviço</h4>
+                            
+                            <ImageUpload label="Imagem do Card" preview={content.services.items[editingServiceIndex].image} onChange={(v) => {
+                                const newItems = [...content.services.items];
+                                newItems[editingServiceIndex].image = v;
+                                updateNestedContent(['services', 'items'], newItems);
+                            }} />
+                            
+                            <InputGroup 
+                                label="Título do Serviço" 
+                                value={content.services.items[editingServiceIndex].title} 
+                                onChange={(v) => {
+                                    const newItems = [...content.services.items];
+                                    newItems[editingServiceIndex].title = v;
+                                    updateNestedContent(['services', 'items'], newItems);
+                                }} 
+                            />
+                            <TextAreaGroup 
+                                label="Descrição Curta" 
+                                value={content.services.items[editingServiceIndex].description} 
+                                onChange={(v) => {
+                                    const newItems = [...content.services.items];
+                                    newItems[editingServiceIndex].description = v;
+                                    updateNestedContent(['services', 'items'], newItems);
+                                }} 
+                            />
                         </div>
-
-                        <div className="space-y-3">
-                            {['Noivas Premium', 'Produção Social', 'Art Lab', 'Workshops & Cursos'].map((service, idx) => (
-                                <div key={idx} className="p-4 bg-brand-dark rounded-xl border border-white/5 flex gap-4 items-center group hover:border-brand-gold/30 transition-colors">
-                                    <div className="w-16 h-16 bg-white/5 rounded-lg overflow-hidden shrink-0">
-                                        <img src={`https://picsum.photos/200/200?random=${idx}`} className="w-full h-full object-cover" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-serif text-white">{service}</h4>
-                                        <p className="text-[10px] text-white/40 uppercase mt-1">Clique para editar detalhes</p>
-                                    </div>
-                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-2 hover:text-brand-gold"><Settings size={16} /></button>
-                                        <button className="p-2 hover:text-red-500"><Trash2 size={16} /></button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
 
-            {/* 7. ART LAB */}
+            {/* 7. ART LAB & GALLERY */}
             {editorSection === 'artlab' && (
                 <>
-                    <ImageUpload label="Imagem de Fundo (Overlay)" preview="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=1935&auto=format&fit=crop" />
-                    <InputGroup label="Título" value="The Art Lab" />
-                    <TextAreaGroup label="Texto Descritivo" value="Onde o clássico encontra o surreal. Produções artísticas, conceituais e temáticas que transcendem o convencional." />
-                    <div className="grid grid-cols-2 gap-4">
-                        <InputGroup label="Texto Botão" value="Explorar Portfólio" />
-                        <InputGroup label="Ação do Botão" value="openGallery()" icon={<Settings size={14}/>} />
+                    <ImageUpload label="Imagem de Fundo (Seção)" preview={content.artLab.bgImage} onChange={(v) => updateNestedContent(['artLab', 'bgImage'], v)} />
+                    <InputGroup label="Título" value={content.artLab.title} onChange={(v) => updateNestedContent(['artLab', 'title'], v)} />
+                    <TextAreaGroup label="Texto Descritivo" value={content.artLab.description} onChange={(v) => updateNestedContent(['artLab', 'description'], v)} />
+                    <InputGroup label="Texto Botão" value={content.artLab.buttonText} onChange={(v) => updateNestedContent(['artLab', 'buttonText'], v)} />
+                    
+                    <div className="mt-8 pt-8 border-t border-white/5">
+                        <h4 className="font-serif text-xl text-brand-gold mb-4">Overlay da Galeria</h4>
+                        <InputGroup label="Título do Overlay" value={content.artLab.overlayTitle} onChange={(v) => updateNestedContent(['artLab', 'overlayTitle'], v)} />
+                        <InputGroup label="Subtítulo" value={content.artLab.overlaySubtitle} onChange={(v) => updateNestedContent(['artLab', 'overlaySubtitle'], v)} />
+                        <TextAreaGroup label="Frase Final" value={content.artLab.overlayDesc} onChange={(v) => updateNestedContent(['artLab', 'overlayDesc'], v)} />
+
+                        {/* GALLERY MANAGER */}
+                        {editingGalleryIndex === null ? (
+                            <div className="mt-8">
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 mb-4 block font-bold">Imagens da Galeria ({content.artLab.galleryImages.length})</label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {content.artLab.galleryImages.map((img, idx) => (
+                                        <div key={idx} className="group relative aspect-square rounded-xl overflow-hidden border border-white/10 bg-brand-dark">
+                                            <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                                                <p className="text-[10px] text-white text-center line-clamp-1">{img.title}</p>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => setEditingGalleryIndex(idx)}
+                                                        className="p-1.5 bg-brand-gold text-brand-dark rounded-full hover:scale-110"
+                                                    >
+                                                        <Edit size={12} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => {
+                                                            const newImages = content.artLab.galleryImages.filter((_, i) => i !== idx);
+                                                            updateNestedContent(['artLab', 'galleryImages'], newImages);
+                                                        }}
+                                                        className="p-1.5 bg-red-500 text-white rounded-full hover:scale-110"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/50 text-[8px] text-white uppercase rounded-md backdrop-blur-sm">
+                                                {img.category}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    <button 
+                                        onClick={() => {
+                                            const newImage: GalleryImage = {
+                                                url: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=1935',
+                                                title: 'Nova Imagem',
+                                                desc: 'Descrição da imagem',
+                                                category: 'artisticas'
+                                            };
+                                            updateNestedContent(['artLab', 'galleryImages'], [...content.artLab.galleryImages, newImage]);
+                                            setEditingGalleryIndex(content.artLab.galleryImages.length);
+                                        }}
+                                        className="aspect-square rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/40 hover:text-brand-gold hover:border-brand-gold hover:bg-brand-gold/5 transition-all"
+                                    >
+                                        <Plus size={24} />
+                                        <span className="text-[10px] uppercase font-bold">Add Foto</span>
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-brand-dark p-6 rounded-2xl border border-white/10 mt-6 relative animate-in fade-in slide-in-from-bottom-4">
+                                <button 
+                                    onClick={() => setEditingGalleryIndex(null)}
+                                    className="absolute top-4 right-4 text-xs uppercase font-bold text-white/40 hover:text-white"
+                                >
+                                    Voltar
+                                </button>
+                                <h4 className="font-serif text-xl mb-6 text-brand-gold">Editando Imagem da Galeria</h4>
+                                
+                                <ImageUpload label="Foto" preview={content.artLab.galleryImages[editingGalleryIndex].url} onChange={(v) => {
+                                    const newImages = [...content.artLab.galleryImages];
+                                    newImages[editingGalleryIndex].url = v;
+                                    updateNestedContent(['artLab', 'galleryImages'], newImages);
+                                }} />
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <InputGroup 
+                                        label="Título" 
+                                        value={content.artLab.galleryImages[editingGalleryIndex].title} 
+                                        onChange={(v) => {
+                                            const newImages = [...content.artLab.galleryImages];
+                                            newImages[editingGalleryIndex].title = v;
+                                            updateNestedContent(['artLab', 'galleryImages'], newImages);
+                                        }} 
+                                    />
+                                    <div>
+                                        <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">Categoria</label>
+                                        <select 
+                                            value={content.artLab.galleryImages[editingGalleryIndex].category}
+                                            onChange={(e) => {
+                                                const newImages = [...content.artLab.galleryImages];
+                                                newImages[editingGalleryIndex].category = e.target.value;
+                                                updateNestedContent(['artLab', 'galleryImages'], newImages);
+                                            }}
+                                            className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all text-white/80 h-[54px]"
+                                        >
+                                            <option value="noivas">Noivas</option>
+                                            <option value="formandas">Formandas</option>
+                                            <option value="sociais">Sociais</option>
+                                            <option value="artisticas">Artísticas</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <TextAreaGroup 
+                                    label="Descrição (Hover)" 
+                                    value={content.artLab.galleryImages[editingGalleryIndex].desc} 
+                                    height="h-24"
+                                    onChange={(v) => {
+                                        const newImages = [...content.artLab.galleryImages];
+                                        newImages[editingGalleryIndex].desc = v;
+                                        updateNestedContent(['artLab', 'galleryImages'], newImages);
+                                    }} 
+                                />
+                            </div>
+                        )}
                     </div>
                 </>
             )}
 
-            {/* 8. EDUCATION */}
+            {/* 8. EDUCATION & POPUP */}
             {editorSection === 'education' && (
                 <>
                     <div className="flex gap-6">
                         <div className="flex-1 space-y-4">
-                            <InputGroup label="Título" value="Domine sua própria beleza" />
-                            <TextAreaGroup label="Texto Principal" value="Nossos cursos de automaquiagem são desenhados para a mulher moderna..." />
+                            <InputGroup label="Título" value={content.education.title} onChange={(v) => updateNestedContent(['education', 'title'], v)} />
+                            <TextAreaGroup label="Texto Principal" value={content.education.description} onChange={(v) => updateNestedContent(['education', 'description'], v)} />
                             
                             <div className="bg-brand-dark p-4 rounded-xl border border-white/5">
-                                <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">O que você vai aprender (Um por linha)</label>
-                                <textarea 
-                                    defaultValue={"Consultoria de Visagismo\nTécnicas de esfumado clássico\nPreparação de pele de alta durabilidade\nCuradoria de produtos essenciais"}
-                                    className="w-full bg-brand-charcoal border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all text-white/80 h-40 font-mono leading-relaxed" 
-                                />
+                                <label className="text-[10px] uppercase tracking-widest text-white/40 mb-4 block font-bold">Lista: O que você vai aprender</label>
+                                <div className="space-y-2">
+                                    {content.education.list.map((item, i) => (
+                                        <div key={i} className="flex gap-2 items-center">
+                                            <div className="w-2 h-2 rounded-full bg-brand-gold shrink-0" />
+                                            <input 
+                                                type="text" 
+                                                value={item}
+                                                onChange={(e) => {
+                                                    const newList = [...content.education.list];
+                                                    newList[i] = e.target.value;
+                                                    updateNestedContent(['education', 'list'], newList);
+                                                }}
+                                                className="flex-1 bg-white/5 border border-white/5 rounded-lg px-3 py-2 text-sm text-white/80 focus:border-brand-gold outline-none"
+                                            />
+                                            <button 
+                                                onClick={() => {
+                                                    const newList = content.education.list.filter((_, idx) => idx !== i);
+                                                    updateNestedContent(['education', 'list'], newList);
+                                                }}
+                                                className="text-white/20 hover:text-red-500"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <button 
+                                        onClick={() => updateNestedContent(['education', 'list'], [...content.education.list, 'Novo tópico de aprendizado'])}
+                                        className="text-xs text-brand-gold font-bold uppercase tracking-widest mt-2 hover:underline"
+                                    >
+                                        + Adicionar Item
+                                    </button>
+                                </div>
                             </div>
 
-                            <InputGroup label="Texto Botão CTA" value="Entrar na Lista de Espera" />
+                            <InputGroup label="Texto Botão CTA" value={content.education.buttonText} onChange={(v) => updateNestedContent(['education', 'buttonText'], v)} />
                         </div>
                         <div className="w-1/3">
-                            <ImageUpload label="Imagem Circular (Giratória)" preview="https://images.unsplash.com/photo-1526045478516-99145907023c?q=80&w=2070&auto=format&fit=crop" />
-                            <InputGroup label="Texto do Badge" value="Cursos VIP" />
+                            <ImageUpload label="Imagem Circular" preview={content.education.image} onChange={(v) => updateNestedContent(['education', 'image'], v)} />
+                            <InputGroup label="Texto do Badge" value={content.education.badgeText} onChange={(v) => updateNestedContent(['education', 'badgeText'], v)} />
                         </div>
+                    </div>
+                    
+                    <div className="mt-8 pt-8 border-t border-white/5 bg-brand-rose/5 p-6 rounded-2xl">
+                         <h4 className="font-serif text-xl text-brand-rose mb-4 flex items-center gap-2"><Sparkles size={18}/> Popup Lista de Espera</h4>
+                         <InputGroup label="Título do Popup" value={content.education.waitlistPopup.title} onChange={(v) => updateNestedContent(['education', 'waitlistPopup', 'title'], v)} />
+                         <InputGroup label="Texto Botão" value={content.education.waitlistPopup.buttonText} onChange={(v) => updateNestedContent(['education', 'waitlistPopup', 'buttonText'], v)} />
+                         <TextAreaGroup label="Mensagem Principal" value={content.education.waitlistPopup.text} onChange={(v) => updateNestedContent(['education', 'waitlistPopup', 'text'], v)} />
                     </div>
                 </>
             )}
@@ -293,12 +725,22 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 9. ABOUT */}
             {editorSection === 'about' && (
                  <>
-                    <ImageUpload label="Foto de Perfil Principal" preview="https://images.unsplash.com/photo-1594744803329-a584af1cae24?q=80&w=1887&auto=format&fit=crop" />
-                    <InputGroup label="Título da Seção" value="Atrás dos Pincéis" />
+                    <ImageUpload label="Foto de Perfil Principal" preview={content.about.image} onChange={(v) => updateNestedContent(['about', 'image'], v)} />
+                    <InputGroup label="Título da Seção" value={content.about.title} onChange={(v) => updateNestedContent(['about', 'title'], v)} />
                     <div className="space-y-2">
-                        <TextAreaGroup label="Parágrafo 1" value="Sou Lara Luíza Castro, maquiadora profissional há mais de 8 anos..." height="h-24" />
-                        <TextAreaGroup label="Parágrafo 2" value="Acredito em uma beleza leve, confortável e duradoura..." height="h-24" />
-                        <TextAreaGroup label="Parágrafo 3" value="Cada detalhe do meu trabalho é feito com carinho..." height="h-24" />
+                        {content.about.paragraphs.map((p, i) => (
+                             <TextAreaGroup 
+                                key={i}
+                                label={`Parágrafo ${i+1}`} 
+                                value={p} 
+                                onChange={(v) => {
+                                    const newP = [...content.about.paragraphs];
+                                    newP[i] = v;
+                                    updateNestedContent(['about', 'paragraphs'], newP);
+                                }} 
+                                height="h-24" 
+                            />
+                        ))}
                     </div>
                  </>
             )}
@@ -306,21 +748,65 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 10. TESTIMONIALS */}
             {editorSection === 'testimonials' && (
                 <div>
-                     <InputGroup label="Título da Seção" value="Relatos de Confiança" />
+                     <InputGroup label="Título da Seção" value={content.testimonials.title} onChange={(v) => updateNestedContent(['testimonials', 'title'], v)} />
                      <div className="mt-6 space-y-4">
-                        {['Carolina Mendes', 'Beatriz Soares', 'Isadora Quintão'].map((name, i) => (
+                        {content.testimonials.items.map((item, i) => (
                              <div key={i} className="p-4 bg-brand-dark rounded-xl border border-white/5 relative group">
                                 <div className="flex gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden"><img src={`https://picsum.photos/100/100?random=${i+10}`} className="w-full h-full" /></div>
+                                    <div className="w-10 h-10 rounded-full bg-white/10 overflow-hidden"><img src={item.image} className="w-full h-full object-cover" /></div>
                                     <div className="flex-1">
-                                        <input type="text" defaultValue={name} className="bg-transparent border-none text-brand-gold font-serif w-full mb-1" />
-                                        <textarea className="w-full bg-transparent text-xs text-white/60 resize-none h-12 outline-none border-none" defaultValue="Depoimento simulado aqui..." />
+                                        <input 
+                                            type="text" 
+                                            value={item.name} 
+                                            onChange={(e) => {
+                                                 const newItems = [...content.testimonials.items];
+                                                 newItems[i].name = e.target.value;
+                                                 updateNestedContent(['testimonials', 'items'], newItems);
+                                            }}
+                                            className="bg-transparent border-none text-brand-gold font-serif w-full mb-1" 
+                                        />
+                                        <textarea 
+                                            className="w-full bg-transparent text-xs text-white/60 resize-none h-12 outline-none border-none" 
+                                            value={item.content} 
+                                            onChange={(e) => {
+                                                 const newItems = [...content.testimonials.items];
+                                                 newItems[i].content = e.target.value;
+                                                 updateNestedContent(['testimonials', 'items'], newItems);
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                         {/* Simple Image Edit for Testimonial - Now Using Upload */}
+                                         <div className="p-1 bg-white/10 rounded hover:bg-white/20">
+                                            <ImageUpload label="" preview={item.image} onChange={(url) => {
+                                                const newItems = [...content.testimonials.items];
+                                                newItems[i].image = url;
+                                                updateNestedContent(['testimonials', 'items'], newItems);
+                                            }} />
+                                         </div>
+                                         <button className="p-1 bg-red-500/20 text-red-500 rounded hover:bg-red-500 hover:text-white" onClick={() => {
+                                             const newItems = content.testimonials.items.filter((_, idx) => idx !== i);
+                                             updateNestedContent(['testimonials', 'items'], newItems);
+                                         }}>
+                                             <Trash2 size={12} />
+                                         </button>
                                     </div>
                                 </div>
-                                <button className="absolute top-2 right-2 p-2 text-white/20 hover:text-red-500"><Trash2 size={14} /></button>
                              </div>
                         ))}
-                        <button className="w-full py-3 border border-dashed border-white/20 rounded-xl text-white/40 hover:text-brand-gold hover:border-brand-gold hover:bg-brand-gold/5 text-xs uppercase font-bold">
+                         <button 
+                            onClick={() => {
+                                const newItem: Testimonial = {
+                                    id: Date.now().toString(),
+                                    name: 'Novo Depoimento',
+                                    role: 'Cliente',
+                                    content: 'Escreva o depoimento aqui...',
+                                    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=1964'
+                                };
+                                updateNestedContent(['testimonials', 'items'], [...content.testimonials.items, newItem]);
+                            }}
+                            className="w-full py-3 border border-dashed border-white/20 rounded-xl text-white/40 hover:text-brand-gold hover:border-brand-gold hover:bg-brand-gold/5 text-xs uppercase font-bold"
+                        >
                             + Adicionar Depoimento
                         </button>
                      </div>
@@ -330,22 +816,50 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 11. FAQ */}
             {editorSection === 'faq' && (
                 <div>
-                    <InputGroup label="Título da Seção" value="Dúvidas Frequentes" />
+                    <InputGroup label="Título da Seção" value={content.faq.title} onChange={(v) => updateNestedContent(['faq', 'title'], v)} />
                     <div className="mt-6 space-y-4">
-                        {faqItems.map((item, i) => (
+                        {content.faq.items.map((item, i) => (
                             <div key={i} className="p-4 bg-brand-dark rounded-xl border border-white/5 group">
                                 <div className="flex justify-between mb-2">
                                     <label className="text-[8px] uppercase text-brand-gold font-bold">Pergunta</label>
-                                    <button className="text-white/20 hover:text-red-500"><Trash2 size={12} /></button>
+                                    <button 
+                                        onClick={() => {
+                                            const newItems = content.faq.items.filter((_, idx) => idx !== i);
+                                            updateNestedContent(['faq', 'items'], newItems);
+                                        }}
+                                        className="text-white/20 hover:text-red-500"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
                                 </div>
-                                <input type="text" defaultValue={item.q} className="w-full bg-transparent border-b border-white/10 pb-2 mb-3 text-sm font-serif outline-none focus:border-brand-gold" />
+                                <input 
+                                    type="text" 
+                                    value={item.question}
+                                    onChange={(e) => {
+                                        const newItems = [...content.faq.items];
+                                        newItems[i].question = e.target.value;
+                                        updateNestedContent(['faq', 'items'], newItems);
+                                    }} 
+                                    className="w-full bg-transparent border-b border-white/10 pb-2 mb-3 text-sm font-serif outline-none focus:border-brand-gold" 
+                                />
                                 
                                 <label className="text-[8px] uppercase text-white/30 font-bold mb-1 block">Resposta</label>
-                                <textarea defaultValue={item.a} className="w-full bg-transparent text-xs text-white/60 resize-none h-16 outline-none" />
+                                <textarea 
+                                    value={item.answer} 
+                                    onChange={(e) => {
+                                        const newItems = [...content.faq.items];
+                                        newItems[i].answer = e.target.value;
+                                        updateNestedContent(['faq', 'items'], newItems);
+                                    }}
+                                    className="w-full bg-transparent text-xs text-white/60 resize-none h-16 outline-none" 
+                                />
                             </div>
                         ))}
                         <button 
-                            onClick={() => setFaqItems([...faqItems, { q: "Nova Pergunta", a: "Nova Resposta" }])}
+                            onClick={() => {
+                                const newItems = [...content.faq.items, { question: "Nova Pergunta", answer: "Nova Resposta" }];
+                                updateNestedContent(['faq', 'items'], newItems);
+                            }}
                             className="w-full py-3 border border-dashed border-white/20 rounded-xl text-white/40 hover:text-brand-gold hover:border-brand-gold hover:bg-brand-gold/5 text-xs uppercase font-bold"
                         >
                             + Adicionar Pergunta
@@ -357,30 +871,33 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 12. LOCATION & FOOTER */}
             {editorSection === 'location' && (
                 <>
-                    <InputGroup label="Título" value="Visite-nos no Lourdes" />
-                    <InputGroup label="Endereço Principal" value="Rua Alvarenga Peixoto, 575 - Lourdes" />
-                    <InputGroup label="WhatsApp Exibição" value="(38) 99221-0136" />
-                    <InputGroup label="Instagram Social" value="@laraluizamakeup_" />
+                    <InputGroup label="Título" value={content.location.title} onChange={(v) => updateNestedContent(['location', 'title'], v)} />
+                    <InputGroup label="Endereço Principal" value={content.location.address} onChange={(v) => updateNestedContent(['location', 'address'], v)} />
+                    <InputGroup label="WhatsApp Exibição" value={content.location.whatsappDisplay} onChange={(v) => updateNestedContent(['location', 'whatsappDisplay'], v)} />
+                    <InputGroup label="Instagram Social" value={content.location.instagramDisplay} onChange={(v) => updateNestedContent(['location', 'instagramDisplay'], v)} />
                     <div className="mt-4">
                         <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">Google Maps Embed URL (Iframe src)</label>
                         <input 
                             type="text" 
-                            defaultValue="https://www.google.com/maps/embed?pb=!1m18!1m12!..."
+                            value={content.location.mapUrl}
+                            onChange={(e) => updateNestedContent(['location', 'mapUrl'], e.target.value)}
                             className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-xs text-white/50 font-mono truncate" 
                         />
+                    </div>
+                    <div className="mt-8 pt-8 border-t border-white/5">
+                        <InputGroup label="Box CTA - Título" value={content.location.ctaTitle} onChange={(v) => updateNestedContent(['location', 'ctaTitle'], v)} />
+                        <InputGroup label="Box CTA - Texto" value={content.location.ctaText} onChange={(v) => updateNestedContent(['location', 'ctaText'], v)} />
+                        <InputGroup label="Box CTA - Botão" value={content.location.ctaButton} onChange={(v) => updateNestedContent(['location', 'ctaButton'], v)} />
                     </div>
                 </>
             )}
 
             {editorSection === 'footer' && (
                 <>
-                    <TextAreaGroup label="Texto Bio Rodapé" value="Maquiadora há 8 anos em Belo Horizonte. Especialista em Noivas, Pele Blindada e Maquiagem Artística." />
-                    <InputGroup label="Link Instagram Principal" value="https://instagram.com/laraluizamakeup_" />
-                    <InputGroup label="Link Instagram Artístico" value="https://instagram.com/laraluizaart" />
-                    <div className="mt-4 p-4 bg-brand-dark rounded-xl border border-white/5">
-                        <span className="text-[10px] uppercase text-white/40 block mb-2">Copyright Text</span>
-                        <p className="text-white/20 text-xs">Editável automaticamente com o ano atual</p>
-                    </div>
+                    <TextAreaGroup label="Texto Bio Rodapé" value={content.footer.bio} onChange={(v) => updateNestedContent(['footer', 'bio'], v)} />
+                    <InputGroup label="Link Instagram Principal" value={content.footer.instagramMain} onChange={(v) => updateNestedContent(['footer', 'instagramMain'], v)} />
+                    <InputGroup label="Link Instagram Artístico" value={content.footer.instagramArt} onChange={(v) => updateNestedContent(['footer', 'instagramArt'], v)} />
+                    <InputGroup label="Texto Botão Flutuante" value={content.footer.floatingCtaText} onChange={(v) => updateNestedContent(['footer', 'floatingCtaText'], v)} />
                 </>
             )}
 
@@ -393,9 +910,11 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             </button>
             <button 
                 onClick={handleSave}
-                className="px-8 py-3 bg-brand-gold text-brand-dark rounded-xl text-xs uppercase tracking-widest font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.2)]"
+                disabled={isSaving}
+                className="px-8 py-3 bg-brand-gold text-brand-dark rounded-xl text-xs uppercase tracking-widest font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.2)] disabled:opacity-50"
             >
-                <Save size={16} /> Salvar Tudo
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+                {isSaving ? 'Salvando...' : 'Salvar Tudo'}
             </button>
         </div>
       </div>
@@ -407,8 +926,8 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
       {/* Sidebar Principal */}
       <aside className="w-full lg:w-72 bg-brand-charcoal border-r border-white/5 p-6 flex flex-col z-40">
         <div className="mb-10 px-4">
-          <span className="font-serif text-xl tracking-widest text-brand-gold font-bold uppercase block">Lara Luíza</span>
-          <span className="text-[8px] tracking-[0.4em] text-brand-rose uppercase">CMS Admin v2.0</span>
+          <span className="font-serif text-xl tracking-widest text-brand-gold font-bold uppercase block">{content.navbar.brandName}</span>
+          <span className="text-[8px] tracking-[0.4em] text-brand-rose uppercase">CMS Admin v3.0</span>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -479,19 +998,19 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                          <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
                              <span className="text-[10px] uppercase text-white/40 block">Versão do Site</span>
-                             <span className="text-lg font-bold text-white">v2.4 (Live)</span>
+                             <span className="text-lg font-bold text-white">v3.0 (Connected)</span>
                          </div>
                          <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
                              <span className="text-[10px] uppercase text-white/40 block">Último Backup</span>
-                             <span className="text-lg font-bold text-white">Há 2 horas</span>
+                             <span className="text-lg font-bold text-white">Automático</span>
                          </div>
                          <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
                              <span className="text-[10px] uppercase text-white/40 block">Status Sistema</span>
-                             <span className="text-lg font-bold text-green-500">Operacional</span>
+                             <span className="text-lg font-bold text-green-500">Online</span>
                          </div>
                          <div className="p-4 bg-brand-dark rounded-xl border border-white/5">
-                             <span className="text-[10px] uppercase text-white/40 block">Fotos Hospedadas</span>
-                             <span className="text-lg font-bold text-white">45/100</span>
+                             <span className="text-[10px] uppercase text-white/40 block">Banco de Dados</span>
+                             <span className="text-lg font-bold text-white">Supabase</span>
                          </div>
                     </div>
                     </div>
@@ -500,105 +1019,14 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
 
                 {activeTab === 'editor' && renderEditor()}
 
+                {/* GALERIA / FOTOS MANAGER */}
                 {activeTab === 'media' && (
-                <div className="space-y-8">
-                    <div className="flex justify-between items-center bg-brand-charcoal p-6 rounded-2xl border border-white/5">
-                    <div>
-                        <h3 className="font-serif text-xl mb-1">Biblioteca de Mídia</h3>
-                        <p className="text-xs text-white/40 uppercase tracking-widest">Gerencie todas as imagens do site</p>
-                    </div>
-                    <button className="flex items-center gap-2 px-6 py-3 bg-brand-gold text-brand-dark font-bold rounded-xl text-xs uppercase tracking-widest hover:brightness-110 transition-all">
-                        <Upload size={16} /> Subir Foto
-                    </button>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {[1,2,3,4,5,6,7,8,9,10,11,12].map(i => (
-                        <div key={i} className="group relative aspect-square rounded-xl overflow-hidden border border-white/5 bg-brand-charcoal">
-                        <img src={`https://picsum.photos/400/400?random=${i}`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-                            <span className="text-[10px] text-white/50 uppercase tracking-widest">Ver. 0{i}</span>
-                            <div className="flex gap-2">
-                                <button className="p-2 bg-white text-brand-dark rounded-full hover:scale-110 transition-transform"><Eye size={14} /></button>
-                                <button className="p-2 bg-red-500 text-white rounded-full hover:scale-110 transition-transform"><Trash2 size={14} /></button>
-                            </div>
-                        </div>
-                        </div>
-                    ))}
-                    </div>
-                </div>
+                    <GalleryManager content={content} updateContent={updateContent} />
                 )}
 
-                {activeTab === 'qr' && (
-                <div className="max-w-4xl mx-auto">
-                    <div className="bg-brand-charcoal p-8 md:p-12 rounded-3xl border border-brand-gold/10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                        <h3 className="font-serif text-3xl mb-2 italic">QR Code Studio</h3>
-                        <p className="text-white/50 text-sm mb-8 max-w-lg">Gere códigos elegantes para seus cartões de visita, balcão ou materiais promocionais.</p>
-                        
-                        <div className="grid md:grid-cols-2 gap-12 items-center relative z-10">
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">URL de Destino</label>
-                                    <div className="relative">
-                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={16} />
-                                        <input 
-                                        type="text" 
-                                        value={qrValue} 
-                                        onChange={(e) => setQrValue(e.target.value)}
-                                        className="w-full bg-brand-dark border border-white/10 pl-12 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all" 
-                                        />
-                                    </div>
-                                </div>
-                                <button className="w-full py-4 bg-brand-gold text-brand-dark font-bold rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-brand-gold/10 hover:shadow-brand-gold/20 transition-all">
-                                    Baixar PNG (Alta Resolução)
-                                </button>
-                            </div>
-
-                            <div className="flex justify-center">
-                                <div className="p-4 bg-white rounded-2xl shadow-2xl transform rotate-2 hover:rotate-0 transition-transform duration-500">
-                                    <img 
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrValue)}&color=121212`} 
-                                        alt="QR Code" 
-                                        className="w-48 h-48 mix-blend-multiply"
-                                    />
-                                    <div className="mt-4 text-center">
-                                        <p className="text-brand-dark font-serif font-bold text-lg">Lara Luíza</p>
-                                        <p className="text-[10px] uppercase tracking-widest text-brand-dark/50">Scan me</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                )}
-
-                {activeTab === 'dns' && (
-                <div className="max-w-4xl space-y-8">
-                    <div className="bg-brand-charcoal p-8 rounded-3xl border border-white/5">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                        <h3 className="font-serif text-xl">Status do Domínio</h3>
-                    </div>
-                    <p className="text-sm text-white/60 mb-8">
-                        Seu site está corretamente apontado para os servidores da Vercel.
-                    </p>
-                    
-                    <div className="space-y-4">
-                        <DnsRecord label="A Record" value="76.76.21.21" status="Ativo" />
-                        <DnsRecord label="CNAME" value="cname.vercel-dns.com" status="Ativo" />
-                    </div>
-
-                    <div className="mt-12 p-6 bg-brand-gold/5 rounded-2xl border border-brand-gold/20">
-                        <h4 className="text-brand-gold text-xs uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
-                        <Settings size={14} /> Instruções Vercel
-                        </h4>
-                        <p className="text-xs text-white/50 leading-relaxed">
-                        Para configurar um novo domínio, acesse o painel da Vercel, vá em Settings &gt; Domains e adicione seu novo endereço. Os registros acima devem ser atualizados no seu provedor de DNS (ex: Registro.br).
-                        </p>
-                    </div>
-                    </div>
-                </div>
-                )}
+                {activeTab === 'qr' && <div className="p-10 text-center text-white/50">QR Code Generator</div>}
+                {activeTab === 'dns' && <div className="p-10 text-center text-white/50">DNS Settings</div>}
+                
             </motion.div>
         </AnimatePresence>
 
@@ -623,7 +1051,13 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
 
 // Components Auxiliares
 
-const StatCard = ({ title, value, color }: { title: string; value: string; color: string }) => (
+interface StatCardProps {
+  title: string;
+  value: string;
+  color: string;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, color }) => (
   <div className="bg-brand-charcoal p-8 rounded-3xl border border-white/5 relative overflow-hidden group hover:border-white/10 transition-colors">
     <div className={`absolute top-0 right-0 w-20 h-20 bg-${color}/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2`} />
     <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-2 relative z-10">{title}</p>
@@ -631,63 +1065,164 @@ const StatCard = ({ title, value, color }: { title: string; value: string; color
   </div>
 );
 
-const InputGroup = ({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) => (
+interface InputGroupProps {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+  onChange?: (v: string) => void;
+}
+
+const InputGroup: React.FC<InputGroupProps> = ({ label, value, icon, onChange }) => (
     <div>
         <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">{label}</label>
         <div className="relative">
             {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">{icon}</div>}
             <input 
                 type="text" 
-                defaultValue={value}
+                value={value}
+                onChange={(e) => onChange?.(e.target.value)}
                 className={`w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all text-white/80 focus:bg-white/5 ${icon ? 'pl-11' : ''}`} 
             />
         </div>
     </div>
 );
 
-const TextAreaGroup = ({ label, value, height = 'h-32' }: { label: string; value: string; height?: string }) => (
+interface TextAreaGroupProps {
+  label: string;
+  value: string;
+  height?: string;
+  onChange?: (v: string) => void;
+}
+
+const TextAreaGroup: React.FC<TextAreaGroupProps> = ({ label, value, height = 'h-32', onChange }) => (
     <div>
         <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">{label}</label>
         <textarea 
-            defaultValue={value}
+            value={value}
+            onChange={(e) => onChange?.(e.target.value)}
             className={`w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all text-white/80 focus:bg-white/5 resize-none ${height}`} 
         />
     </div>
 );
 
-const ColorPicker = ({ label, value }: { label: string; value: string }) => (
+interface ColorPickerProps {
+  label: string;
+  value: string;
+  onChange?: (v: string) => void;
+}
+
+const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange }) => (
     <div>
         <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">{label}</label>
         <div className="flex items-center gap-3 bg-brand-dark border border-white/10 p-2 rounded-xl">
             <input 
                 type="color" 
-                defaultValue={value}
+                value={value}
+                onChange={(e) => onChange?.(e.target.value)}
                 className="w-10 h-10 rounded-lg bg-transparent border-none cursor-pointer" 
             />
             <input 
                 type="text" 
-                defaultValue={value}
+                value={value}
+                onChange={(e) => onChange?.(e.target.value)}
                 className="bg-transparent border-none outline-none text-sm text-white/70 font-mono w-full uppercase"
             />
         </div>
     </div>
 );
 
-const ImageUpload = ({ label, preview }: { label: string; preview: string }) => (
-    <div className="mb-6">
-        <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">{label}</label>
-        <div className="relative aspect-video rounded-xl overflow-hidden border border-white/10 group bg-brand-dark">
-            <img src={preview} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute inset-0 flex items-center justify-center">
-                <button className="px-6 py-3 bg-brand-charcoal/80 backdrop-blur-md border border-white/20 text-white rounded-lg text-xs uppercase tracking-widest font-bold hover:bg-brand-gold hover:text-brand-dark hover:border-brand-gold transition-all flex items-center gap-2">
-                    <Upload size={14} /> Trocar Imagem
-                </button>
-            </div>
-        </div>
-    </div>
-);
+interface ImageUploadProps {
+  label: string;
+  preview: string;
+  onChange?: (url: string) => void;
+}
 
-const DnsRecord = ({ label, value, status }: { label: string; value: string; status: string }) => (
+const ImageUpload: React.FC<ImageUploadProps> = ({ label, preview, onChange }) => {
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('portfolio-images')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage
+                .from('portfolio-images')
+                .getPublicUrl(filePath);
+
+            onChange?.(data.publicUrl);
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Erro ao fazer upload da imagem.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <div className="mb-6">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">{label}</label>
+            <div className="relative aspect-video rounded-xl overflow-hidden border border-white/10 group bg-brand-dark">
+                {isUploading ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-charcoal z-20">
+                        <Loader2 className="animate-spin text-brand-gold mb-2" />
+                        <span className="text-xs text-white/50">Enviando...</span>
+                    </div>
+                ) : (
+                    <img src={preview} className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" />
+                )}
+                
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-6 py-3 bg-brand-charcoal/80 backdrop-blur-md border border-white/20 text-white rounded-lg text-xs uppercase tracking-widest font-bold hover:bg-brand-gold hover:text-brand-dark hover:border-brand-gold transition-all flex items-center gap-2"
+                    >
+                        <Upload size={14} /> Trocar Imagem
+                    </button>
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleFileChange}
+                    />
+                </div>
+            </div>
+            {/* Opção de URL direta caso falhe o upload */}
+            <details className="mt-2 text-[10px] text-white/30 cursor-pointer">
+                <summary>Usar URL externa (avançado)</summary>
+                <input 
+                    type="text" 
+                    value={preview}
+                    onChange={(e) => onChange?.(e.target.value)}
+                    className="w-full mt-2 bg-transparent border border-white/10 rounded p-2 text-white/80"
+                    placeholder="https://..."
+                />
+            </details>
+        </div>
+    );
+};
+
+interface DnsRecordProps {
+  label: string;
+  value: string;
+  status: string;
+}
+
+const DnsRecord: React.FC<DnsRecordProps> = ({ label, value, status }) => (
   <div className="flex flex-col md:flex-row md:items-center justify-between p-5 bg-brand-dark rounded-xl border border-white/5 gap-4">
     <div className="flex gap-12">
       <div className="min-w-[100px]">

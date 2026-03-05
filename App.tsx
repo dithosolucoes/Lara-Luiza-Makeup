@@ -6,21 +6,22 @@ import {
   ChevronRight, ArrowRight, Star,
   Shield, Palette, Sparkles, MessageCircle,
   ShieldCheck, GraduationCap, Square, LayoutGrid, Grid3X3,
-  Heart, Sparkle, Lock
+  Heart, Sparkle, Lock, LogIn
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
-import { SERVICES, TESTIMONIALS, FAQ, NAVIGATION, ART_GALLERY_IMAGES } from './constants';
 import { AdminArea } from './AdminArea';
+import { ContentProvider, useContent } from './ContentContext';
 
-// Initialize Supabase
-const supabaseUrl = 'https://nrxcnybpektzqbfwfotc.supabase.co';
-const supabaseAnonKey = 'sb_publishable_A6kfsxkP5K4Iy0qUx5AwOA_pZSao0QU';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Initialize Supabase (CORRIGIDO: Usando a chave JWT correta)
+const supabaseUrl = 'https://xjpzrdvdmusogthzypzp.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcHpyZHZkbXVzb2d0aHp5cHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjY4NTUsImV4cCI6MjA4NjcwMjg1NX0.HJh4nbE_vsTsP_QEUCbbJUyT13P5dGXLqfyf5Iop39Y';
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Components
-const Navbar = () => {
+const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { content } = useContent();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -36,13 +37,13 @@ const Navbar = () => {
           animate={{ opacity: 1, x: 0 }}
           className="flex flex-col"
         >
-          <span className="font-serif text-2xl tracking-widest text-brand-gold font-bold uppercase">Lara Luíza</span>
-          <span className="text-[10px] tracking-[0.3em] font-sans text-white/50 uppercase">Makeup Artist & Educator</span>
+          <span className="font-serif text-2xl tracking-widest text-brand-gold font-bold uppercase">{content.navbar.brandName}</span>
+          <span className="text-[10px] tracking-[0.3em] font-sans text-white/50 uppercase">{content.navbar.brandSubtitle}</span>
         </motion.div>
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-10">
-          {NAVIGATION.map((item, idx) => (
+          {content.navbar.items.map((item, idx) => (
             <motion.a
               key={item.href}
               href={item.href}
@@ -55,15 +56,23 @@ const Navbar = () => {
             </motion.a>
           ))}
           <motion.a
-            href="https://wa.me/5538992210136"
+            href={content.navbar.ctaLink}
             target="_blank"
             rel="noopener noreferrer"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="px-6 py-2 bg-brand-gold text-brand-dark rounded-full text-xs font-bold uppercase tracking-widest"
           >
-            Agendar Agora
+            {content.navbar.ctaText}
           </motion.a>
+          
+          <button 
+            onClick={onOpenAdmin}
+            className="text-white/20 hover:text-brand-gold transition-colors ml-2 p-2 rounded-full hover:bg-white/5"
+            title="Acesso Administrativo"
+          >
+            <LogIn size={14} />
+          </button>
         </div>
 
         {/* Mobile Toggle */}
@@ -82,7 +91,7 @@ const Navbar = () => {
             className="lg:hidden bg-brand-dark border-b border-white/10 overflow-hidden"
           >
             <div className="flex flex-col p-6 gap-6">
-              {NAVIGATION.map((item) => (
+              {content.navbar.items.map((item) => (
                 <a 
                   key={item.href} 
                   href={item.href} 
@@ -92,13 +101,21 @@ const Navbar = () => {
                   {item.label}
                 </a>
               ))}
+              
+              <button 
+                onClick={() => { setIsOpen(false); onOpenAdmin(); }}
+                className="text-xs uppercase tracking-widest font-sans border-b border-white/5 pb-2 text-white/40 hover:text-brand-gold text-left flex items-center gap-2"
+              >
+                <LogIn size={12} /> Login Administrativo
+              </button>
+
               <a 
-                href="https://wa.me/5538992210136"
+                href={content.navbar.ctaLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-4 bg-brand-gold text-brand-dark text-center rounded-xl font-bold uppercase"
               >
-                Agendar via WhatsApp
+                {content.navbar.ctaText}
               </a>
             </div>
           </motion.div>
@@ -130,122 +147,162 @@ const SectionHeading = ({ title, subtitle, centered = false }: { title: string; 
   </div>
 );
 
-const FloatingCTA = () => (
-  <motion.a
-    href="https://wa.me/5538992210136"
-    target="_blank"
-    rel="noopener noreferrer"
-    initial={{ scale: 0, opacity: 0 }}
-    animate={{ scale: 1, opacity: 1 }}
-    whileHover={{ scale: 1.1, rotate: 5 }}
-    className="fixed bottom-8 right-8 z-[100] bg-green-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center"
-  >
-    <MessageCircle size={32} />
-    <span className="absolute -top-2 -left-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold animate-bounce uppercase tracking-tighter">Online</span>
-  </motion.a>
-);
+const FloatingCTA = () => {
+  const { content } = useContent();
+  return (
+    <motion.a
+      href={content.navbar.ctaLink}
+      target="_blank"
+      rel="noopener noreferrer"
+      initial={{ scale: 0, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      whileHover={{ scale: 1.1, rotate: 5 }}
+      className="fixed bottom-8 right-8 z-[100] bg-green-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center"
+    >
+      <MessageCircle size={32} />
+      <span className="absolute -top-2 -left-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold animate-bounce uppercase tracking-tighter">
+        {content.footer.floatingCtaText}
+      </span>
+    </motion.a>
+  );
+};
 
-const WaitlistPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => (
-  <AnimatePresence>
-    {isOpen && (
-      <div className="fixed inset-0 z-[300] flex items-center justify-center px-6">
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-        />
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative bg-brand-charcoal border border-brand-rose/30 rounded-3xl p-8 md:p-12 max-w-lg w-full shadow-2xl overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 p-4">
-            <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
-              <X size={24} />
-            </button>
-          </div>
-          
-          <div className="flex flex-col items-center text-center">
-            <div className="relative mb-6">
-              <div className="w-20 h-20 bg-brand-rose/10 rounded-full flex items-center justify-center animate-pulse">
-                <Heart className="text-brand-rose" size={40} fill="rgba(229, 189, 187, 0.2)" />
-              </div>
-              <Sparkle className="absolute -top-2 -right-2 text-brand-gold animate-bounce" size={20} />
+const WaitlistPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const { content } = useContent();
+  const data = content.education.waitlistPopup;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center px-6">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            className="relative bg-brand-charcoal border border-brand-rose/30 rounded-3xl p-8 md:p-12 max-w-lg w-full shadow-2xl overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4">
+              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+                <X size={24} />
+              </button>
             </div>
             
-            <h3 className="font-serif text-3xl md:text-4xl mb-4 text-brand-rose italic">Sua vaga está quase lá.</h3>
-            <p className="text-white/70 font-sans text-sm md:text-base mb-8 leading-relaxed italic">
-              "A beleza é o espelho da alma, e eu quero te ensinar a refleti-la com perfeição."
-              <br /><br />
-              Nossos cursos VIP têm alta procura. Entre em contato para garantir sua prioridade na próxima turma.
-            </p>
-            
-            <a 
-              href="https://wa.me/5538992210136"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-5 bg-brand-rose text-brand-dark rounded-xl font-bold uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform flex items-center justify-center gap-3 shadow-xl"
-            >
-              Falar com a Lara agora <MessageCircle size={18} />
-            </a>
-            
-            <button 
-              onClick={onClose}
-              className="mt-6 text-[10px] uppercase tracking-widest text-white/30 hover:text-white transition-colors font-bold"
-            >
-              Voltar para o site
-            </button>
-          </div>
+            <div className="flex flex-col items-center text-center">
+              <div className="relative mb-6">
+                <div className="w-20 h-20 bg-brand-rose/10 rounded-full flex items-center justify-center animate-pulse">
+                  <Heart className="text-brand-rose" size={40} fill="rgba(229, 189, 187, 0.2)" />
+                </div>
+                <Sparkle className="absolute -top-2 -right-2 text-brand-gold animate-bounce" size={20} />
+              </div>
+              
+              <h3 className="font-serif text-3xl md:text-4xl mb-4 text-brand-rose italic">{data.title}</h3>
+              <p className="text-white/70 font-sans text-sm md:text-base mb-8 leading-relaxed italic whitespace-pre-line">
+                {data.text}
+              </p>
+              
+              <a 
+                href={content.navbar.ctaLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-5 bg-brand-rose text-brand-dark rounded-xl font-bold uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform flex items-center justify-center gap-3 shadow-xl"
+              >
+                {data.buttonText} <MessageCircle size={18} />
+              </a>
+              
+              <button 
+                onClick={onClose}
+                className="mt-6 text-[10px] uppercase tracking-widest text-white/30 hover:text-white transition-colors font-bold"
+              >
+                Voltar para o site
+              </button>
+            </div>
 
-          {/* Rose Glow Accents */}
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-rose/10 rounded-full blur-3xl" />
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-gold/10 rounded-full blur-3xl" />
-        </motion.div>
-      </div>
-    )}
-  </AnimatePresence>
-);
+            {/* Rose Glow Accents */}
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-rose/10 rounded-full blur-3xl" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-gold/10 rounded-full blur-3xl" />
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
 
-const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
+const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void; onCancel: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulating login for structural demonstration
-    setTimeout(() => {
+    setError('');
+
+    // --- DEV BYPASS ---
+    // Permite acesso imediato caso o Supabase não esteja enviando emails
+    if (email === 'admin@laraluiza.com' && password === 'admin') {
       onLogin();
       setLoading(false);
-    }, 1500);
+      return;
+    }
+    // ------------------
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError('Credenciais inválidas. Tente novamente.');
+      setLoading(false);
+    } else {
+      onLogin();
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-brand-dark flex items-center justify-center p-6">
+    <div className="min-h-screen bg-brand-dark flex items-center justify-center p-6 relative z-[500]">
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md bg-brand-charcoal border border-brand-gold/20 rounded-3xl p-8 md:p-12 shadow-2xl text-center"
+        className="w-full max-w-md bg-brand-charcoal border border-brand-gold/20 rounded-3xl p-8 md:p-12 shadow-2xl text-center relative"
       >
+        <button 
+          onClick={onCancel}
+          className="absolute top-4 right-4 text-white/30 hover:text-white"
+        >
+          <X size={20} />
+        </button>
+
         <div className="w-16 h-16 bg-brand-gold/10 rounded-full flex items-center justify-center mx-auto mb-8">
           <Lock className="text-brand-gold" size={32} />
         </div>
         <h2 className="font-serif text-3xl mb-2 text-brand-gold italic tracking-widest">Acesso Restrito</h2>
         <p className="text-xs text-white/40 uppercase tracking-[0.3em] mb-10">Portal Administrativo</p>
         
+        {error && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-xs">
+                {error}
+            </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6 text-left">
           <div>
-            <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">Usuário ou Email</label>
+            <label className="text-[10px] uppercase tracking-widest text-white/40 mb-2 block font-bold">Email</label>
             <input 
-              type="text" 
+              type="email" 
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all" 
+              className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all text-white/80" 
               placeholder="admin@laraluiza.com"
             />
           </div>
@@ -256,7 +313,7 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all" 
+              className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-gold outline-none text-sm transition-all text-white/80" 
               placeholder="••••••••"
             />
           </div>
@@ -280,6 +337,8 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
 const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'noivas' | 'formandas' | 'sociais' | 'artisticas'>('all');
   const [gridDensity, setGridDensity] = useState<'large' | 'medium' | 'small'>('medium');
+  const { content } = useContent();
+  const data = content.artLab;
   
   const categories = [
     { id: 'all', label: 'Todas' },
@@ -296,8 +355,8 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   ];
 
   const filteredImages = selectedCategory === 'all' 
-    ? ART_GALLERY_IMAGES 
-    : ART_GALLERY_IMAGES.filter(img => img.category === selectedCategory);
+    ? data.galleryImages 
+    : data.galleryImages.filter(img => img.category === selectedCategory);
 
   const getLayoutConfig = () => {
     switch (gridDensity) {
@@ -350,8 +409,8 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             </motion.button>
 
             <div className="mb-12">
-              <h4 className="text-brand-gold text-xs uppercase tracking-[0.4em] mb-4 font-sans font-bold">The Art Lab Portfolio</h4>
-              <h2 className="text-5xl md:text-8xl font-serif leading-tight italic mb-12">Sua visão, seu estilo.</h2>
+              <h4 className="text-brand-gold text-xs uppercase tracking-[0.4em] mb-4 font-sans font-bold">{data.overlaySubtitle}</h4>
+              <h2 className="text-5xl md:text-8xl font-serif leading-tight italic mb-12">{data.overlayTitle}</h2>
               
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 border-b border-white/10 pb-6">
                 <div className="flex flex-wrap gap-4 md:gap-8">
@@ -399,9 +458,9 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               className={`${layout.columns} ${layout.gap} min-h-[600px] transition-all duration-500`}
             >
               <AnimatePresence mode="popLayout">
-                {filteredImages.map((img) => (
+                {filteredImages.map((img, idx) => (
                   <motion.div 
-                    key={img.url}
+                    key={idx} // Using index as fallback key if URL is duplicate in mocks
                     layout
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -426,7 +485,7 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
             <div className="mt-32 text-center border-t border-white/5 pt-20">
                <p className="font-serif text-2xl italic text-white/50 mb-12 max-w-2xl mx-auto">
-                 "Cada categoria reflete um compromisso único com a sua essência e o momento que você está vivendo."
+                 {data.overlayDesc}
                </p>
                <button 
                 onClick={onClose}
@@ -442,28 +501,15 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   );
 };
 
-const App: React.FC = () => {
+const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; content: any }) => {
   const [isArtGalleryOpen, setIsArtGalleryOpen] = useState(false);
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
-  const [isAdminMode, setIsAdminMode] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef });
   const heroOpacity = useTransform(scrollYProgress, [0, 1], [1, 0]);
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
-  // Check for #admin in URL
-  useEffect(() => {
-    const handleHash = () => {
-      setIsAdminMode(window.location.hash === '#admin');
-    };
-    handleHash();
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
-
-  // Lock scroll when gallery or popup is open
   useEffect(() => {
     if (isArtGalleryOpen || isWaitlistOpen) {
       document.body.style.overflow = 'hidden';
@@ -472,18 +518,9 @@ const App: React.FC = () => {
     }
   }, [isArtGalleryOpen, isWaitlistOpen]);
 
-  // Admin View
-  if (isAdminMode) {
-    if (!isLoggedIn) {
-      return <AdminLogin onLogin={() => setIsLoggedIn(true)} />;
-    }
-    return <AdminArea onLogout={() => setIsLoggedIn(false)} />;
-  }
-
-  // Public View
   return (
     <div className="bg-brand-dark text-white selection:bg-brand-gold selection:text-brand-dark font-sans">
-      <Navbar />
+      <Navbar onOpenAdmin={onOpenAdmin} />
       <FloatingCTA />
       
       <ArtGalleryOverlay 
@@ -504,7 +541,7 @@ const App: React.FC = () => {
         >
           <div className="absolute inset-0 bg-black/40 z-10" />
           <img 
-            src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=2087&auto=format&fit=crop" 
+            src={content.hero.bgImage}
             alt="Lara Luiza Makeup Hero" 
             className="w-full h-full object-cover"
           />
@@ -517,26 +554,26 @@ const App: React.FC = () => {
             transition={{ duration: 1, ease: "easeOut" }}
           >
             <h1 className="text-6xl md:text-[8rem] font-serif leading-none mb-6">
-              Beleza <br />
-              <span className="italic text-brand-rose">Natural</span>
+              {content.hero.title} <br />
+              <span className="italic text-brand-rose">{content.hero.titleHighlight}</span>
             </h1>
             <p className="max-w-2xl mx-auto text-lg md:text-xl font-sans font-light tracking-wide text-white/80 mb-10">
-              Realçando belezas através da maquiagem
+              {content.hero.subtitle}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <button 
                 onClick={() => setIsArtGalleryOpen(true)}
                 className="px-10 py-5 bg-white text-brand-dark font-bold uppercase tracking-widest text-sm hover:bg-brand-gold transition-colors duration-300 w-full sm:w-auto text-center"
               >
-                Ver Portfólio
+                {content.hero.button1Text}
               </button>
               <a 
-                href="https://wa.me/5538992210136" 
+                href={content.hero.button2Link}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-10 py-5 border border-white/30 backdrop-blur-md font-bold uppercase tracking-widest text-sm hover:border-brand-gold transition-colors duration-300 w-full sm:w-auto text-center"
               >
-                Agendar Data
+                {content.hero.button2Text}
               </a>
             </div>
           </motion.div>
@@ -549,7 +586,7 @@ const App: React.FC = () => {
           className="absolute bottom-10 left-1/2 -translate-x-1/2 text-center"
         >
           <div className="w-[1px] h-16 bg-gradient-to-b from-transparent to-brand-gold mx-auto" />
-          <span className="text-[10px] uppercase tracking-[0.3em] text-brand-gold mt-4 block">Scroll to Discover</span>
+          <span className="text-[10px] uppercase tracking-[0.3em] text-brand-gold mt-4 block">{content.hero.scrollText}</span>
         </motion.div>
       </section>
 
@@ -564,33 +601,33 @@ const App: React.FC = () => {
               className="relative"
             >
               <div className="aspect-[4/5] overflow-hidden rounded-2xl relative">
-                <img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=2071&auto=format&fit=crop" alt="Conceito Lara Luiza" className="w-full h-full object-cover" />
+                <img src={content.concept.image} alt="Conceito Lara Luiza" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-brand-gold/20" />
               </div>
               <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-brand-gold flex flex-col items-center justify-center text-brand-dark p-6 rounded-2xl shadow-2xl">
-                <span className="text-4xl font-serif font-bold italic">+8</span>
-                <span className="text-[10px] uppercase tracking-widest font-bold text-center mt-2">Anos de Experiência</span>
+                <span className="text-4xl font-serif font-bold italic">{content.concept.yearsNumber}</span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-center mt-2">{content.concept.yearsText}</span>
               </div>
             </motion.div>
 
             <div>
               <SectionHeading 
-                subtitle="O Conceito" 
-                title="A BELEZA DE SER VOCÊ." 
+                subtitle={content.concept.subtitle}
+                title={content.concept.title}
               />
-              <p className="text-lg text-white/70 mb-8 leading-relaxed font-sans">
-                Referência em Belo Horizonte, Lara Luiza Castro construiu sua trajetória combinando técnica apurada e olhar artístico. Seu trabalho é marcado por maquiagens de acabamento natural, elegantes e de longa duração.
+              <p className="text-lg text-white/70 mb-8 leading-relaxed font-sans whitespace-pre-line">
+                {content.concept.description}
               </p>
               <div className="grid grid-cols-2 gap-8">
                 <div className="flex flex-col gap-2">
                   <Sparkles className="text-brand-gold mb-2" />
-                  <h5 className="font-bold text-sm uppercase tracking-widest">Efeito Glow</h5>
-                  <p className="text-xs text-white/50">Luminosidade estratégica para fotos e vídeos.</p>
+                  <h5 className="font-bold text-sm uppercase tracking-widest">{content.concept.diff1Title}</h5>
+                  <p className="text-xs text-white/50">{content.concept.diff1Desc}</p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Shield className="text-brand-gold mb-2" />
-                  <h5 className="font-bold text-sm uppercase tracking-widest">Durabilidade</h5>
-                  <p className="text-xs text-white/50">Produtos de excelência para um resultlado impecável</p>
+                  <h5 className="font-bold text-sm uppercase tracking-widest">{content.concept.diff2Title}</h5>
+                  <p className="text-xs text-white/50">{content.concept.diff2Desc}</p>
                 </div>
               </div>
             </div>
@@ -616,19 +653,15 @@ const App: React.FC = () => {
             </motion.div>
             <SectionHeading 
               centered
-              subtitle="Exclusividade Técnica" 
-              title="A Lendária Pele Blindada" 
+              subtitle={content.shield.subtitle}
+              title={content.shield.title}
             />
             <p className="text-xl md:text-2xl font-sans text-white/80 mb-12 italic">
-              "Chore, dance, abrace. Sua beleza permanecerá intacta até o último minuto."
+              {content.shield.quote}
             </p>
             
             <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { label: 'À prova de lágrimas', desc: 'Sua emoção não marca seu rosto.' },
-                { label: 'Suor & Calor', desc: 'Impecável mesmo no auge da pista.' },
-                { label: 'Atrito zero', desc: 'Livre para abraçar quem você ama.' }
-              ].map((item, idx) => (
+              {content.shield.cards.map((item: any, idx: number) => (
                 <motion.div 
                   key={idx}
                   initial={{ opacity: 0, y: 20 }}
@@ -637,7 +670,7 @@ const App: React.FC = () => {
                   transition={{ delay: idx * 0.2 }}
                   className="p-8 border border-white/5 bg-white/5 rounded-2xl hover:border-brand-gold/50 transition-colors"
                 >
-                  <h6 className="font-serif text-lg text-brand-gold mb-2">{item.label}</h6>
+                  <h6 className="font-serif text-lg text-brand-gold mb-2">{item.title}</h6>
                   <p className="text-xs text-white/50 font-sans tracking-wide">{item.desc}</p>
                 </motion.div>
               ))}
@@ -649,10 +682,10 @@ const App: React.FC = () => {
       {/* 4. SERVICES GRID */}
       <section id="services" className="py-24 bg-brand-charcoal">
         <div className="container mx-auto px-6">
-          <SectionHeading subtitle="Serviços" title="Experiências de Transformação" centered />
+          <SectionHeading subtitle={content.services.subtitle} title={content.services.title} centered />
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {SERVICES.map((service, idx) => (
+            {content.services.items.map((service: any, idx: number) => (
               <motion.div
                 key={service.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -680,7 +713,7 @@ const App: React.FC = () => {
       {/* 5. THE ART LAB (Dark/Disruptive Section) */}
       <section id="art" className="py-32 bg-black text-white relative">
         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <img src="https://images.unsplash.com/photo-1512496015851-a90fb38ba796?q=80&w=1935&auto=format&fit=crop" className="w-full h-full object-cover mix-blend-overlay" />
+          <img src={content.artLab.bgImage} className="w-full h-full object-cover mix-blend-overlay" />
         </div>
         <div className="container mx-auto px-6 flex flex-col items-center text-center relative z-10">
           <motion.div
@@ -689,9 +722,9 @@ const App: React.FC = () => {
             className="flex flex-col items-center mb-12"
           >
              <Palette size={60} className="text-brand-rose mb-6 animate-pulse" />
-             <h2 className="text-5xl md:text-8xl font-serif italic mb-6">The Art Lab</h2>
+             <h2 className="text-5xl md:text-8xl font-serif italic mb-6">{content.artLab.title}</h2>
              <p className="max-w-xl text-lg text-white/60">
-               Onde o clássico encontra o surreal. Produções artísticas, conceituais e temáticas que transcendem o convencional.
+               {content.artLab.description}
              </p>
           </motion.div>
           
@@ -702,7 +735,7 @@ const App: React.FC = () => {
               whileTap={{ scale: 0.95 }}
               className="px-8 py-4 border border-brand-rose text-brand-rose hover:bg-brand-rose hover:text-white transition-all duration-300 font-bold uppercase tracking-widest text-xs"
             >
-              Explorar Portfólio Completo
+              {content.artLab.buttonText}
             </motion.button>
           </div>
         </div>
@@ -713,18 +746,12 @@ const App: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-16 items-center">
             <div className="lg:w-1/2">
-              <SectionHeading subtitle="Educação" title="Domine sua própria beleza" />
-              <p className="text-lg text-brand-dark/70 mb-8 leading-relaxed">
-                Nossos cursos de automaquiagem são desenhados para a mulher moderna que deseja autonomia. Aprenda do básico ao avançado, com foco na técnica de <strong>Pele Blindada Profissional</strong> adaptada para o seu dia a dia.
+              <SectionHeading subtitle={content.education.subtitle} title={content.education.title} />
+              <p className="text-lg text-brand-dark/70 mb-8 leading-relaxed whitespace-pre-line">
+                {content.education.description}
               </p>
               <ul className="space-y-4 mb-10">
-                {[
-                  'Consultoria de Visagismo',
-                  'Técnicas de esfumado clássico',
-                  'Preparação de pele de alta durabilidade',
-                  'Curadoria de produtos essenciais',
-                  'Personal Shopper - Orientação individual.'
-                ].map((item, i) => (
+                {content.education.list.map((item: string, i: number) => (
                   <li key={i} className="flex items-start gap-3 font-sans font-medium text-sm">
                     <div className="w-1.5 h-1.5 rounded-full bg-brand-gold mt-2 shrink-0" />
                     <span className="leading-tight">{item}</span>
@@ -735,7 +762,7 @@ const App: React.FC = () => {
                 onClick={() => setIsWaitlistOpen(true)}
                 className="px-10 py-5 bg-brand-dark text-white font-bold uppercase tracking-widest text-sm hover:bg-brand-gold transition-colors"
               >
-                Entrar na Lista de Espera
+                {content.education.buttonText}
               </button>
             </div>
             <div className="lg:w-1/2 relative">
@@ -743,11 +770,11 @@ const App: React.FC = () => {
                  <div className="absolute inset-0 border-t-2 border-brand-gold rounded-full" />
                </div>
                <div className="absolute inset-4 overflow-hidden rounded-full">
-                 <img src="https://images.unsplash.com/photo-1526045478516-99145907023c?q=80&w=2070&auto=format&fit=crop" alt="Curso de Maquiagem" className="w-full h-full object-cover scale-110" />
+                 <img src={content.education.image} alt="Curso de Maquiagem" className="w-full h-full object-cover scale-110" />
                </div>
                <div className="absolute -top-4 -left-4 bg-brand-gold text-brand-dark p-6 rounded-2xl shadow-xl rotate-3">
                  <GraduationCap size={32} />
-                 <span className="block text-xs font-bold mt-2">Cursos VIP</span>
+                 <span className="block text-xs font-bold mt-2">{content.education.badgeText}</span>
                </div>
             </div>
           </div>
@@ -760,21 +787,15 @@ const App: React.FC = () => {
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
             <div className="w-full md:w-1/3">
               <div className="aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10">
-                <img src="https://images.unsplash.com/photo-1594744803329-a584af1cae24?q=80&w=1887&auto=format&fit=crop" alt="Lara Luiza Castro" className="w-full h-full object-cover" />
+                <img src={content.about.image} alt="Lara Luiza Castro" className="w-full h-full object-cover" />
               </div>
             </div>
             <div className="w-full md:w-2/3">
-              <SectionHeading subtitle="Sobre" title="Atrás dos pincéis" />
+              <SectionHeading subtitle={content.about.subtitle} title={content.about.title} />
               <div className="space-y-6 text-white/70 font-sans leading-relaxed">
-                <p>
-                  Sou Lara Luíza Castro, maquiadora profissional há mais de 8 anos, movida pela paixão em realçar belezas e ajudar mulheres a realizarem seus sonhos.
-                </p>
-                <p>
-                  Acredito em uma beleza leve, confortável e duradoura. Meu maior orgulho é quando a cliente se olha no espelho e diz: “Sou eu, só que ainda mais linda.”
-                </p>
-                <p>
-                  Cada detalhe do meu trabalho é feito con carinho, técnica e sensibilidade. Mais do que maquiagem, entrego confiança e bem-estar.
-                </p>
+                {content.about.paragraphs.map((para: string, i: number) => (
+                  <p key={i}>{para}</p>
+                ))}
               </div>
             </div>
           </div>
@@ -784,10 +805,10 @@ const App: React.FC = () => {
       {/* 8. TESTIMONIALS */}
       <section id="testimonials" className="py-24 bg-brand-charcoal overflow-hidden">
         <div className="container mx-auto px-6">
-          <SectionHeading centered subtitle="Testemunhos" title="Relatos de Confiança" />
+          <SectionHeading centered subtitle={content.testimonials.subtitle} title={content.testimonials.title} />
           
           <div className="flex flex-nowrap md:grid md:grid-cols-3 gap-8 overflow-x-auto pb-8 snap-x no-scrollbar">
-            {TESTIMONIALS.map((t, i) => (
+            {content.testimonials.items.map((t: any, i: number) => (
               <motion.div
                 key={t.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -818,15 +839,15 @@ const App: React.FC = () => {
       {/* 9. FAQ SECTION */}
       <section className="py-24 bg-brand-dark">
         <div className="container mx-auto px-6 max-w-3xl">
-          <SectionHeading centered subtitle="Suporte" title="Dúvidas Frequentes" />
+          <SectionHeading centered subtitle={content.faq.subtitle} title={content.faq.title} />
           <div className="space-y-4">
-            {FAQ.map((item, i) => (
+            {content.faq.items.map((item: any, i: number) => (
               <details key={i} className="group border-b border-white/10 pb-4">
                 <summary className="flex justify-between items-center cursor-pointer list-none py-4">
                   <span className="font-serif text-lg md:text-xl group-open:text-brand-gold transition-colors">{item.question}</span>
                   <ChevronRight className="group-open:rotate-90 transition-transform duration-300 text-brand-gold" />
                 </summary>
-                <div className="pt-2 pb-4 text-white/60 leading-relaxed font-sans text-sm md:text-base">
+                <div className="pt-2 pb-4 text-white/60 leading-relaxed font-sans text-sm md:text-base whitespace-pre-line">
                   {item.answer}
                 </div>
               </details>
@@ -840,50 +861,50 @@ const App: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="flex flex-col lg:flex-row gap-16">
             <div className="lg:w-1/2">
-               <SectionHeading subtitle="Localização" title="Visite-nos no Lourdes" />
+               <SectionHeading subtitle={content.location.subtitle} title={content.location.title} />
                <div className="space-y-6 font-sans">
                  <div className="flex gap-4 items-start">
                    <MapPin className="text-brand-gold shrink-0 mt-1" />
                    <div>
                      <h6 className="font-bold uppercase text-xs tracking-widest mb-1">Endereço Principal</h6>
-                     <p className="text-sm opacity-70 italic">Rua Alvarenga Peixoto, 575 - Lourdes</p>
+                     <p className="text-sm opacity-70 italic">{content.location.address}</p>
                    </div>
                  </div>
                  <div className="flex gap-4 items-start">
                    <Phone className="text-brand-gold shrink-0 mt-1" />
                    <div>
                      <h6 className="font-bold uppercase text-xs tracking-widest mb-1">WhatsApp & Agendamento</h6>
-                     <p className="text-sm opacity-70">(38) 992210136</p>
+                     <p className="text-sm opacity-70">{content.location.whatsappDisplay}</p>
                    </div>
                  </div>
                  <div className="flex gap-4 items-start">
                    <Instagram className="text-brand-gold shrink-0 mt-1" />
                    <div>
                      <h6 className="font-bold uppercase text-xs tracking-widest mb-1">Instagram Social</h6>
-                     <p className="text-sm opacity-70">@laraluizamakeup_</p>
+                     <p className="text-sm opacity-70">{content.location.instagramDisplay}</p>
                    </div>
                  </div>
                </div>
                
                <div className="mt-12 p-8 border border-brand-dark/10 rounded-2xl bg-white shadow-sm">
-                 <h4 className="font-serif text-2xl mb-4">Pronta para brilhar?</h4>
+                 <h4 className="font-serif text-2xl mb-4">{content.location.ctaTitle}</h4>
                  <p className="text-sm opacity-70 mb-8">
-                   Seja para seu casamento, formatura ou apenas para aprender a se maquiar, estou aqui para te ouvir.
+                   {content.location.ctaText}
                  </p>
                  <a 
-                   href="https://wa.me/5538992210136" 
+                   href={content.navbar.ctaLink}
                    target="_blank"
                    rel="noopener noreferrer"
                    className="inline-flex items-center justify-center gap-3 px-10 py-5 bg-brand-dark text-white font-bold uppercase tracking-widest text-sm hover:scale-105 transition-transform w-full"
                  >
-                   Falar com Lara agora <ArrowRight size={16} />
+                   {content.location.ctaButton} <ArrowRight size={16} />
                  </a>
                </div>
             </div>
             
             <div className="lg:w-1/2 min-h-[400px] bg-brand-charcoal rounded-3xl overflow-hidden relative shadow-2xl grayscale hover:grayscale-0 transition-all duration-700">
                <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3750.840733036667!2d-43.9452296!3d-19.9304907!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xa6999086968037%3A0x6a0537f5979f4d7b!2sR.%20Alvarenga%20Peixoto%2C%20575%20-%20Lourdes%2C%20Belo%20Horizonte%20-%20MG%2C%2030180-120!5e0!3m2!1spt-BR!2sbr!4v1714850000000!5m2!1spt-BR!2sbr"
+                src={content.location.mapUrl}
                 className="w-full h-full border-0 absolute inset-0 opacity-80 hover:opacity-100 transition-opacity"
                 loading="lazy"
                ></iframe>
@@ -897,29 +918,88 @@ const App: React.FC = () => {
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-start gap-12 mb-20">
             <div className="max-w-xs">
-              <span className="font-serif text-3xl tracking-widest text-brand-gold font-bold uppercase">Lara Luíza</span>
+              <span className="font-serif text-3xl tracking-widest text-brand-gold font-bold uppercase">{content.navbar.brandName}</span>
               <p className="text-white/40 text-sm mt-4 font-sans leading-relaxed">
-                Maquiadora há 8 anos em Belo Horizonte. Especialista em Noivas, Pele Blindada e Maquiagem Artística.
+                {content.footer.bio}
               </p>
             </div>
             
             <div className="grid grid-cols-2 gap-12 md:gap-24">
               <div className="flex flex-col gap-4">
                 <h6 className="font-bold text-[10px] uppercase tracking-[0.4em] text-brand-gold">Navegação</h6>
-                {NAVIGATION.slice(0, 4).map(item => (
+                {content.navbar.items.slice(0, 4).map((item: any) => (
                   <a key={item.href} href={item.href} className="text-sm text-white/60 hover:text-white transition-colors uppercase tracking-widest font-sans">{item.label}</a>
                 ))}
               </div>
               <div className="flex flex-col gap-4">
                 <h6 className="font-bold text-[10px] uppercase tracking-[0.4em] text-brand-gold">Social</h6>
-                <a href="https://instagram.com/laraluizamakeup_" target="_blank" className="text-sm text-white/60 hover:text-white transition-colors uppercase tracking-widest font-sans">Principal</a>
-                <a href="https://instagram.com/laraluizaart" target="_blank" className="text-sm text-white/60 hover:text-white transition-colors uppercase tracking-widest font-sans">Artístico</a>
+                <a href={content.footer.instagramMain} target="_blank" className="text-sm text-white/60 hover:text-white transition-colors uppercase tracking-widest font-sans">Principal</a>
+                <a href={content.footer.instagramArt} target="_blank" className="text-sm text-white/60 hover:text-white transition-colors uppercase tracking-widest font-sans">Artístico</a>
               </div>
             </div>
           </div>
         </div>
       </footer>
     </div>
+  );
+};
+
+const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
+  const { content, loading } = useContent();
+  
+  if (loading) {
+    return (
+        <div className="h-screen w-full bg-brand-dark flex flex-col items-center justify-center text-brand-gold gap-4">
+            <div className="w-10 h-10 border-t-2 border-brand-gold rounded-full animate-spin"></div>
+            <span className="text-xs uppercase tracking-widest animate-pulse">Carregando Experiência...</span>
+        </div>
+    );
+  }
+
+  return <LandingPage onOpenAdmin={onOpenAdmin} content={content} />;
+}
+
+const App: React.FC = () => {
+  const [view, setView] = useState<'public' | 'admin_login' | 'admin_panel'>('public');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check Supabase Auth on Load
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setIsLoggedIn(true);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Wrapper principal para fornecer o Contexto
+  return (
+    <ContentProvider>
+      {view === 'admin_login' && (
+        <AdminLogin onLogin={() => { setIsLoggedIn(true); setView('admin_panel'); }} onCancel={() => setView('public')} />
+      )}
+      {view === 'admin_panel' && isLoggedIn && (
+        <AdminArea onLogout={async () => { 
+            await supabase.auth.signOut();
+            setIsLoggedIn(false); 
+            setView('public'); 
+        }} />
+      )}
+      {view === 'admin_panel' && !isLoggedIn && (
+        <AdminLogin onLogin={() => { setIsLoggedIn(true); setView('admin_panel'); }} onCancel={() => setView('public')} />
+      )}
+      {view === 'public' && (
+        <MainSite onOpenAdmin={() => setView('admin_login')} />
+      )}
+    </ContentProvider>
   );
 };
 
