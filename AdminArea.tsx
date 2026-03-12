@@ -37,6 +37,8 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
     const [filter, setFilter] = useState('all');
     const [isDragging, setIsDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const replaceFileInputRef = useRef<HTMLInputElement>(null);
+    const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
 
     const filteredImages = filter === 'all' 
         ? content.artLab.galleryImages 
@@ -142,22 +144,65 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
         setUploading(false);
     };
 
+    const handleReplaceClick = (indexToReplace: number) => {
+        const imageToReplace = filteredImages[indexToReplace];
+        const realIndex = content.artLab.galleryImages.findIndex((img: any) => img.url === imageToReplace.url);
+        if (realIndex === -1) return;
+        
+        setReplacingIndex(realIndex);
+        replaceFileInputRef.current?.click();
+    };
+
+    const handleReplaceFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || replacingIndex === null) return;
+
+        setUploading(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('portfolio-images')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage
+                .from('portfolio-images')
+                .getPublicUrl(filePath);
+
+            const newImages = [...content.artLab.galleryImages];
+            newImages[replacingIndex] = {
+                ...newImages[replacingIndex],
+                url: data.publicUrl
+            };
+
+            updateContent('artLab', { galleryImages: newImages });
+        } catch (error) {
+            console.error('Upload error:', error);
+        } finally {
+            setUploading(false);
+            setReplacingIndex(null);
+            if (replaceFileInputRef.current) replaceFileInputRef.current.value = '';
+        }
+    };
+
     const handleDelete = (indexToDelete: number) => {
         // Find the actual index in the main array, not the filtered one
         const imageToDelete = filteredImages[indexToDelete];
-        const realIndex = content.artLab.galleryImages.findIndex((img: any) => img === imageToDelete);
+        const realIndex = content.artLab.galleryImages.findIndex((img: any) => img.url === imageToDelete.url);
         
         if (realIndex === -1) return;
 
-        if (confirm('Tem certeza que deseja excluir esta foto?')) {
-            const newImages = content.artLab.galleryImages.filter((_: any, i: number) => i !== realIndex);
-            updateContent('artLab', { galleryImages: newImages });
-        }
+        const newImages = content.artLab.galleryImages.filter((_: any, i: number) => i !== realIndex);
+        updateContent('artLab', { galleryImages: newImages });
     };
 
     const handleCategoryChange = (indexToEdit: number, newCategory: string) => {
         const imageToEdit = filteredImages[indexToEdit];
-        const realIndex = content.artLab.galleryImages.findIndex((img: any) => img === imageToEdit);
+        const realIndex = content.artLab.galleryImages.findIndex((img: any) => img.url === imageToEdit.url);
         
         if (realIndex === -1) return;
 
@@ -227,23 +272,42 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
 
             {/* Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-20">
+                <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={replaceFileInputRef} 
+                    onChange={handleReplaceFile} 
+                />
                 {filteredImages.map((img: any, idx: number) => (
                     <div key={idx} className="group relative aspect-square rounded-xl overflow-hidden bg-brand-dark border border-white/5">
-                        <img src={img.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <img 
+                            src={img.url} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 cursor-pointer" 
+                            onClick={() => handleReplaceClick(idx)}
+                            title="Clique para substituir"
+                        />
                         
                         {/* Overlay Actions */}
-                        <div className="absolute inset-0 bg-black/60 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                            <div className="flex justify-end">
+                        <div className="absolute inset-0 bg-black/60 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3 pointer-events-none">
+                            <div className="flex justify-between items-start pointer-events-auto">
+                                <button 
+                                    onClick={() => handleReplaceClick(idx)}
+                                    className="p-3 lg:p-2 bg-brand-gold/20 text-brand-gold rounded-lg hover:bg-brand-gold hover:text-brand-dark transition-colors shadow-lg"
+                                    title="Substituir Foto"
+                                >
+                                    <Upload size={16} />
+                                </button>
                                 <button 
                                     onClick={() => handleDelete(idx)}
-                                    className="p-3 lg:p-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                                    className="p-3 lg:p-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors shadow-lg"
                                     title="Excluir"
                                 >
                                     <Trash2 size={16} />
                                 </button>
                             </div>
                             
-                            <div>
+                            <div className="pointer-events-auto">
                                 <select 
                                     value={img.category}
                                     onChange={(e) => handleCategoryChange(idx, e.target.value)}
@@ -291,26 +355,62 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
   const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
   const [editingGalleryIndex, setEditingGalleryIndex] = useState<number | null>(null);
   const [waitlistCount, setWaitlistCount] = useState<number | string>('...');
+  const [visitsCount, setVisitsCount] = useState<number | string>('...');
+  const [whatsappClicksCount, setWhatsappClicksCount] = useState<number | string>('...');
+  const [leads, setLeads] = useState<any[]>([]);
 
   const { content, updateContent, updateNestedContent, saveToSupabase, reloadFromSupabase } = useContent();
 
   useEffect(() => {
-    const fetchWaitlistCount = async () => {
+    const fetchStats = async () => {
         try {
-            const { count, error } = await supabase
+            const { count: wCount, error: wError } = await supabase
                 .from('waitlist')
                 .select('*', { count: 'exact', head: true });
             
-            if (!error && count !== null) {
-                setWaitlistCount(count);
+            if (!wError && wCount !== null) {
+                setWaitlistCount(wCount);
             } else {
                 setWaitlistCount(0);
             }
+
+            const { data: leadsData, error: leadsError } = await supabase
+                .from('waitlist')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (!leadsError && leadsData) {
+                setLeads(leadsData);
+            }
+
+            const { count: vCount, error: vError } = await supabase
+                .from('analytics')
+                .select('*', { count: 'exact', head: true })
+                .eq('event_type', 'visit');
+            
+            if (!vError && vCount !== null) {
+                setVisitsCount(vCount);
+            } else {
+                setVisitsCount(0);
+            }
+
+            const { count: cCount, error: cError } = await supabase
+                .from('analytics')
+                .select('*', { count: 'exact', head: true })
+                .eq('event_type', 'whatsapp_click');
+            
+            if (!cError && cCount !== null) {
+                setWhatsappClicksCount(cCount);
+            } else {
+                setWhatsappClicksCount(0);
+            }
         } catch (e) {
             setWaitlistCount(0);
+            setVisitsCount(0);
+            setWhatsappClicksCount(0);
         }
     };
-    fetchWaitlistCount();
+    fetchStats();
   }, []);
 
   const menuItems = [
@@ -1093,10 +1193,44 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             >
                 {activeTab === 'dash' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <StatCard title="Visitas Hoje" value="1,204" color="brand-gold" />
-                    <StatCard title="Cliques no WhatsApp" value="86" color="brand-rose" />
+                    <StatCard title="Visitas Hoje" value={visitsCount.toString()} color="brand-gold" />
+                    <StatCard title="Cliques no WhatsApp" value={whatsappClicksCount.toString()} color="brand-rose" />
                     <StatCard title="Leads Cursos" value={waitlistCount.toString()} color="white" />
                     
+                    <div className="md:col-span-3 bg-brand-charcoal rounded-3xl p-8 border border-white/5">
+                        <h3 className="font-serif text-xl mb-6 text-brand-gold">Leads da Lista de Espera</h3>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-white/70">
+                                <thead className="text-xs uppercase bg-brand-dark/50 text-white/40">
+                                    <tr>
+                                        <th className="px-6 py-3 rounded-tl-xl">Nome</th>
+                                        <th className="px-6 py-3">E-mail</th>
+                                        <th className="px-6 py-3">WhatsApp</th>
+                                        <th className="px-6 py-3 rounded-tr-xl">Data</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {leads.length > 0 ? leads.map((lead, idx) => (
+                                        <tr key={lead.id || idx} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                            <td className="px-6 py-4 font-medium text-white">{lead.name}</td>
+                                            <td className="px-6 py-4">{lead.email}</td>
+                                            <td className="px-6 py-4">
+                                                <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-brand-gold hover:underline">
+                                                    {lead.phone}
+                                                </a>
+                                            </td>
+                                            <td className="px-6 py-4">{new Date(lead.created_at).toLocaleDateString('pt-BR')}</td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={4} className="px-6 py-8 text-center text-white/30 italic">Nenhum lead cadastrado ainda.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div className="md:col-span-3 bg-brand-charcoal rounded-3xl p-8 border border-white/5">
                     <h3 className="font-serif text-xl mb-6 text-brand-gold">Visão Geral do Conteúdo</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1152,7 +1286,43 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                         </a>
                     </div>
                 )}
-                {activeTab === 'dns' && <div className="p-10 text-center text-white/50">DNS Settings</div>}
+                {activeTab === 'dns' && (
+                    <div className="max-w-3xl mx-auto py-10">
+                        <h2 className="text-3xl font-serif text-white italic mb-2">Domínio & DNS</h2>
+                        <p className="text-white/40 text-xs uppercase tracking-widest mb-12">Configurações para colocar seu site no ar</p>
+                        
+                        <div className="bg-brand-charcoal rounded-3xl p-8 border border-white/5 space-y-6">
+                            <h3 className="text-xl font-serif text-brand-gold">Apontamento de Domínio</h3>
+                            <p className="text-sm text-white/70 leading-relaxed">
+                                Para que o seu site seja acessado através de <strong>www.laraluizamakeup.com.br</strong>, você precisa configurar os apontamentos DNS onde o seu domínio foi registrado (ex: Registro.br, Hostinger, GoDaddy).
+                            </p>
+                            
+                            <div className="bg-brand-dark p-6 rounded-xl border border-white/10">
+                                <h4 className="text-xs uppercase tracking-widest text-white/40 mb-4 font-bold">Entrada A (Principal)</h4>
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                    <div><span className="text-white/40 block text-xs">Tipo</span><span className="text-white font-mono">A</span></div>
+                                    <div><span className="text-white/40 block text-xs">Nome / Host</span><span className="text-white font-mono">@ (ou vazio)</span></div>
+                                    <div><span className="text-white/40 block text-xs">Valor / IP</span><span className="text-brand-gold font-mono">76.76.21.21</span></div>
+                                </div>
+                            </div>
+
+                            <div className="bg-brand-dark p-6 rounded-xl border border-white/10">
+                                <h4 className="text-xs uppercase tracking-widest text-white/40 mb-4 font-bold">Entrada CNAME (Subdomínio WWW)</h4>
+                                <div className="grid grid-cols-3 gap-4 text-sm">
+                                    <div><span className="text-white/40 block text-xs">Tipo</span><span className="text-white font-mono">CNAME</span></div>
+                                    <div><span className="text-white/40 block text-xs">Nome / Host</span><span className="text-white font-mono">www</span></div>
+                                    <div><span className="text-white/40 block text-xs">Valor / Destino</span><span className="text-brand-gold font-mono">cname.vercel-dns.com</span></div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                                <p className="text-xs text-blue-200 leading-relaxed">
+                                    <strong>Nota:</strong> Os valores de IP e CNAME acima são exemplos para hospedagem na Vercel. Se você hospedar em outra plataforma (como Netlify ou Hostinger), os valores serão diferentes. A propagação do DNS pode levar até 24 horas.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 
             </motion.div>
         </AnimatePresence>

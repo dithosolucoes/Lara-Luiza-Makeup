@@ -17,6 +17,14 @@ const supabaseUrl = 'https://xjpzrdvdmusogthzypzp.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcHpyZHZkbXVzb2d0aHp5cHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjY4NTUsImV4cCI6MjA4NjcwMjg1NX0.HJh4nbE_vsTsP_QEUCbbJUyT13P5dGXLqfyf5Iop39Y';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export const trackWhatsAppClick = async () => {
+  try {
+    await supabase.from('analytics').insert([{ event_type: 'whatsapp_click' }]);
+  } catch (e) {
+    console.error('Error tracking whatsapp click:', e);
+  }
+};
+
 // Components
 const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,6 +67,7 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
             href={content.navbar.ctaLink}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={trackWhatsAppClick}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="px-6 py-2 bg-brand-gold text-brand-dark rounded-full text-xs font-bold uppercase tracking-widest"
@@ -108,6 +117,7 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
                 href={content.navbar.ctaLink}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={trackWhatsAppClick}
                 className="w-full py-4 bg-brand-gold text-brand-dark text-center rounded-full font-bold uppercase tracking-widest"
               >
                 {content.navbar.ctaText}
@@ -156,6 +166,7 @@ const FloatingCTA = () => {
       href={content.navbar.ctaLink}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={trackWhatsAppClick}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.1, rotate: 5 }}
@@ -320,15 +331,6 @@ const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void; onCancel: () =
     e.preventDefault();
     setLoading(true);
     setError('');
-
-    // --- DEV BYPASS ---
-    // Permite acesso imediato caso o Supabase não esteja enviando emails
-    if (email === 'admin@laraluiza.com' && password === 'admin') {
-      onLogin();
-      setLoading(false);
-      return;
-    }
-    // ------------------
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -971,6 +973,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
                    href={content.navbar.ctaLink}
                    target="_blank"
                    rel="noopener noreferrer"
+                   onClick={trackWhatsAppClick}
                    className="inline-flex items-center justify-center gap-3 px-10 py-5 bg-brand-dark text-white font-bold uppercase tracking-widest text-sm hover:scale-105 transition-transform w-full"
                  >
                    {content.location.ctaButton} <ArrowRight size={16} />
@@ -1023,6 +1026,18 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
 const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
   const { content, loading } = useContent();
   
+  useEffect(() => {
+    // Track visit
+    const trackVisit = async () => {
+      try {
+        await supabase.from('analytics').insert([{ event_type: 'visit' }]);
+      } catch (e) {
+        console.error('Error tracking visit:', e);
+      }
+    };
+    trackVisit();
+  }, []);
+
   if (loading) {
     return (
         <div className="h-screen w-full bg-brand-dark flex flex-col items-center justify-center text-brand-gold gap-4">
