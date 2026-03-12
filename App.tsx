@@ -415,6 +415,7 @@ const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void; onCancel: () =
 const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'noivas' | 'formandas' | 'sociais' | 'artisticas'>('all');
   const [gridDensity, setGridDensity] = useState<'large' | 'medium' | 'small'>('medium');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { content } = useContent();
   const data = content.artLab;
   
@@ -544,6 +545,7 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
+                    onClick={() => setSelectedImage(img.url)}
                     className="group relative break-inside-avoid rounded-2xl overflow-hidden cursor-zoom-in shadow-2xl border border-white/5"
                   >
                     <img 
@@ -573,6 +575,39 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                </button>
             </div>
           </div>
+
+          {/* Lightbox Modal */}
+          <AnimatePresence>
+            {selectedImage && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedImage(null)}
+                className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
+              >
+                <motion.button
+                  className="absolute top-8 right-8 text-white/50 hover:text-white z-[310] p-4 bg-white/10 rounded-full backdrop-blur-md"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImage(null);
+                  }}
+                >
+                  <X size={24} />
+                </motion.button>
+                <motion.img
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
+                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                  src={selectedImage}
+                  alt="Expanded view"
+                  className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>
@@ -618,11 +653,14 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
           className="absolute inset-0 z-0"
         >
           <div className="absolute inset-0 bg-black/40 z-10" />
-          <img 
-            src={content.hero.bgImage}
-            alt="Lara Luiza Makeup Hero" 
-            className="w-full h-full object-cover"
-          />
+          <picture>
+            <source media="(max-width: 768px)" srcSet={content.hero.bgImageMobile || content.hero.bgImage} />
+            <img 
+              src={content.hero.bgImage}
+              alt="Lara Luiza Makeup Hero" 
+              className="w-full h-full object-cover"
+            />
+          </picture>
         </motion.div>
 
         <div className="container mx-auto px-6 relative z-20 text-center">
@@ -679,7 +717,10 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
               className="relative"
             >
               <div className="aspect-[4/5] overflow-hidden rounded-2xl relative">
-                <img src={content.concept.image} alt="Conceito Lara Luiza" className="w-full h-full object-cover" />
+                <picture>
+                  <source media="(max-width: 768px)" srcSet={content.concept.imageMobile || content.concept.image} />
+                  <img src={content.concept.image} alt="Conceito Lara Luiza" className="w-full h-full object-cover" />
+                </picture>
                 <div className="absolute inset-0 ring-1 ring-inset ring-brand-gold/20" />
               </div>
               <div className="absolute -bottom-4 -right-4 md:-bottom-8 md:-right-8 w-32 h-32 md:w-48 md:h-48 bg-brand-gold flex flex-col items-center justify-center text-brand-dark p-4 md:p-6 rounded-2xl shadow-2xl">
@@ -865,7 +906,10 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
           <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center gap-16">
             <div className="w-full md:w-1/3">
               <div className="aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10">
-                <img src={content.about.image} alt="Lara Luiza Castro" className="w-full h-full object-cover" />
+                <picture>
+                  <source media="(max-width: 768px)" srcSet={content.about.imageMobile || content.about.image} />
+                  <img src={content.about.image} alt="Lara Luiza Castro" className="w-full h-full object-cover" />
+                </picture>
               </div>
             </div>
             <div className="w-full md:w-2/3">

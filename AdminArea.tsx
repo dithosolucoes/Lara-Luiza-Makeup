@@ -582,7 +582,10 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 3. HERO */}
             {editorSection === 'hero' && (
                 <>
-                    <ImageUpload label="Imagem de Fundo" preview={content.hero.bgImage} onChange={(v) => updateNestedContent(['hero', 'bgImage'], v)} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ImageUpload label="Imagem de Fundo (Desktop)" preview={content.hero.bgImage} onChange={(v) => updateNestedContent(['hero', 'bgImage'], v)} />
+                        <ImageUpload label="Imagem de Fundo (Mobile)" preview={content.hero.bgImageMobile || content.hero.bgImage} onChange={(v) => updateNestedContent(['hero', 'bgImageMobile'], v)} />
+                    </div>
                     <InputGroup label="Título Principal" value={content.hero.title} onChange={(v) => updateNestedContent(['hero', 'title'], v)} />
                     <InputGroup label="Destaque do Título (Rose)" value={content.hero.titleHighlight} onChange={(v) => updateNestedContent(['hero', 'titleHighlight'], v)} />
                     <InputGroup label="Subtítulo" value={content.hero.subtitle} onChange={(v) => updateNestedContent(['hero', 'subtitle'], v)} />
@@ -602,11 +605,12 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 4. CONCEPT */}
             {editorSection === 'concept' && (
                 <>
-                    <div className="flex gap-4">
-                        <div className="w-1/3">
-                            <ImageUpload label="Imagem Lateral" preview={content.concept.image} onChange={(v) => updateNestedContent(['concept', 'image'], v)} />
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="w-full md:w-1/3 space-y-4">
+                            <ImageUpload label="Imagem Lateral (Desktop)" preview={content.concept.image} onChange={(v) => updateNestedContent(['concept', 'image'], v)} />
+                            <ImageUpload label="Imagem Lateral (Mobile)" preview={content.concept.imageMobile || content.concept.image} onChange={(v) => updateNestedContent(['concept', 'imageMobile'], v)} />
                         </div>
-                        <div className="w-2/3 space-y-4">
+                        <div className="w-full md:w-2/3 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <InputGroup label="Número Destaque" value={content.concept.yearsNumber} onChange={(v) => updateNestedContent(['concept', 'yearsNumber'], v)} />
                                 <InputGroup label="Texto Destaque" value={content.concept.yearsText} onChange={(v) => updateNestedContent(['concept', 'yearsText'], v)} />
@@ -924,7 +928,10 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 9. ABOUT */}
             {editorSection === 'about' && (
                  <>
-                    <ImageUpload label="Foto de Perfil Principal" preview={content.about.image} onChange={(v) => updateNestedContent(['about', 'image'], v)} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <ImageUpload label="Foto de Perfil (Desktop)" preview={content.about.image} onChange={(v) => updateNestedContent(['about', 'image'], v)} />
+                        <ImageUpload label="Foto de Perfil (Mobile)" preview={content.about.imageMobile || content.about.image} onChange={(v) => updateNestedContent(['about', 'imageMobile'], v)} />
+                    </div>
                     <InputGroup label="Título da Seção" value={content.about.title} onChange={(v) => updateNestedContent(['about', 'title'], v)} />
                     <div className="space-y-2">
                         {content.about.paragraphs.map((p, i) => (
@@ -1309,7 +1316,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
 
         {/* Floating Action Bar */}
         {(activeTab === 'editor' || activeTab === 'media') && (
-            <div className="fixed bottom-0 left-0 lg:left-72 right-0 p-4 lg:p-6 border-t border-white/5 bg-brand-charcoal/95 backdrop-blur-md z-50 flex justify-end gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+            <div className="fixed bottom-16 lg:bottom-0 left-0 lg:left-72 right-0 p-4 lg:p-6 border-t border-white/5 bg-brand-charcoal/95 backdrop-blur-md z-50 flex justify-end gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
                 <button 
                     onClick={handleRevert}
                     disabled={isReverting}

@@ -21,6 +21,7 @@ const defaultContent: ContentState = {
     titleHighlight: 'Natural',
     subtitle: 'Realçando belezas através da maquiagem',
     bgImage: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=2087&auto=format&fit=crop',
+    bgImageMobile: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1080&auto=format&fit=crop',
     button1Text: 'Ver Portfólio',
     button1Link: '#portfolio', 
     button2Text: 'Agendar Data',
@@ -29,6 +30,7 @@ const defaultContent: ContentState = {
   },
   concept: {
     image: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=2071&auto=format&fit=crop',
+    imageMobile: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=1080&auto=format&fit=crop',
     yearsNumber: '+8',
     yearsText: 'Anos de Experiência',
     subtitle: 'O Conceito',
@@ -89,6 +91,7 @@ const defaultContent: ContentState = {
     subtitle: 'Sobre',
     title: 'Atrás dos pincéis',
     image: 'https://images.unsplash.com/photo-1594744803329-a584af1cae24?q=80&w=1887&auto=format&fit=crop',
+    imageMobile: 'https://images.unsplash.com/photo-1594744803329-a584af1cae24?q=80&w=1080&auto=format&fit=crop',
     paragraphs: [
       'Sou Lara Luíza Castro, maquiadora profissional há mais de 8 anos, movida pela paixão em realçar belezas e ajudar mulheres a realizarem seus sonhos.',
       'Acredito em uma beleza leve, confortável e duradoura. Meu maior orgulho é quando a cliente se olha no espelho e diz: “Sou eu, só que ainda mais linda.”',
