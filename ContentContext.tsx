@@ -131,6 +131,7 @@ interface ContentContextType {
   updateNestedContent: (path: string[], value: any) => void;
   saveToSupabase: () => Promise<boolean>;
   resetContent: () => void;
+  reloadFromSupabase: () => Promise<void>;
 }
 
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
@@ -139,29 +140,28 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [content, setContent] = useState<ContentState>(defaultContent);
   const [loading, setLoading] = useState(true);
 
+  const fetchContent = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('site_content')
+        .select('content')
+        .order('id', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data && data.content) {
+        setContent((prev) => ({ ...prev, ...data.content }));
+      }
+    } catch (error) {
+      console.error('Error fetching content:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch content from Supabase on mount
   useEffect(() => {
-    const fetchContent = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('site_content')
-          .select('content')
-          .order('id', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (data && data.content) {
-          // Merge fetched content with default content structure to ensure no missing keys
-          // if schema changed
-          setContent((prev) => ({ ...prev, ...data.content }));
-        }
-      } catch (error) {
-        console.error('Error fetching content:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchContent();
   }, []);
 
@@ -203,8 +203,12 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setContent(defaultContent);
   };
 
+  const reloadFromSupabase = async () => {
+    await fetchContent();
+  };
+
   return (
-    <ContentContext.Provider value={{ content, loading, updateContent, updateNestedContent, saveToSupabase, resetContent }}>
+    <ContentContext.Provider value={{ content, loading, updateContent, updateNestedContent, saveToSupabase, resetContent, reloadFromSupabase }}>
       {children}
     </ContentContext.Provider>
   );

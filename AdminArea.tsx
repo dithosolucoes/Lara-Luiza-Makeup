@@ -52,6 +52,51 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
         setIsDragging(false);
     };
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        const newImages = [];
+
+        for (const file of files) {
+            if (!file.type.startsWith('image/')) continue;
+
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('portfolio-images')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data } = supabase.storage
+                    .from('portfolio-images')
+                    .getPublicUrl(filePath);
+
+                newImages.push({
+                    url: data.publicUrl,
+                    title: 'Nova Foto',
+                    desc: '',
+                    category: filter === 'all' ? 'artisticas' : filter
+                });
+            } catch (error) {
+                console.error('Upload error:', error);
+            }
+        }
+
+        if (newImages.length > 0) {
+            updateContent('artLab', { galleryImages: [...newImages, ...content.artLab.galleryImages] });
+        }
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
     const handleDrop = async (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
@@ -92,7 +137,7 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
         }
 
         if (newImages.length > 0) {
-            updateContent('artLab', { galleryImages: [...content.artLab.galleryImages, ...newImages] });
+            updateContent('artLab', { galleryImages: [...newImages, ...content.artLab.galleryImages] });
         }
         setUploading(false);
     };
@@ -129,12 +174,12 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
                     <p className="text-white/40 text-xs uppercase tracking-widest">Gerencie seu portfólio visual</p>
                 </div>
                 
-                <div className="flex bg-brand-charcoal p-1 rounded-xl border border-white/5">
+                <div className="flex bg-brand-charcoal p-1 rounded-xl border border-white/5 overflow-x-auto hide-scrollbar w-full md:w-auto">
                     {['all', 'noivas', 'formandas', 'sociais', 'artisticas'].map((cat) => (
                         <button
                             key={cat}
                             onClick={() => setFilter(cat)}
-                            className={`px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all ${
+                            className={`px-4 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all whitespace-nowrap shrink-0 ${
                                 filter === cat 
                                 ? 'bg-brand-gold text-brand-dark' 
                                 : 'text-white/40 hover:text-white'
@@ -151,12 +196,21 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`mb-8 border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all ${
+                onClick={() => fileInputRef.current?.click()}
+                className={`mb-8 border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer ${
                     isDragging 
                     ? 'border-brand-gold bg-brand-gold/10 scale-[1.02]' 
                     : 'border-white/10 bg-brand-dark hover:border-white/20'
                 }`}
             >
+                <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={fileInputRef} 
+                    onChange={handleFileSelect} 
+                />
                 {uploading ? (
                     <div className="flex flex-col items-center animate-pulse">
                         <Loader2 className="animate-spin text-brand-gold mb-2" size={32} />
@@ -166,7 +220,7 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
                     <>
                         <Upload className={`mb-4 ${isDragging ? 'text-brand-gold' : 'text-white/20'}`} size={32} />
                         <h4 className="text-white font-serif text-lg mb-1">Arraste fotos para cá</h4>
-                        <p className="text-white/40 text-xs">Ou clique para selecionar (em breve)</p>
+                        <p className="text-white/40 text-xs">Ou clique para selecionar</p>
                     </>
                 )}
             </div>
@@ -178,14 +232,14 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
                         <img src={img.url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         
                         {/* Overlay Actions */}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+                        <div className="absolute inset-0 bg-black/60 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
                             <div className="flex justify-end">
                                 <button 
                                     onClick={() => handleDelete(idx)}
-                                    className="p-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
+                                    className="p-3 lg:p-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"
                                     title="Excluir"
                                 >
-                                    <Trash2 size={14} />
+                                    <Trash2 size={16} />
                                 </button>
                             </div>
                             
@@ -193,7 +247,7 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
                                 <select 
                                     value={img.category}
                                     onChange={(e) => handleCategoryChange(idx, e.target.value)}
-                                    className="w-full bg-black/50 text-white text-[10px] uppercase font-bold border border-white/20 rounded px-2 py-1 outline-none focus:border-brand-gold"
+                                    className="w-full bg-black/80 lg:bg-black/50 text-white text-[10px] uppercase font-bold border border-white/20 rounded px-2 py-2 lg:py-1 outline-none focus:border-brand-gold"
                                 >
                                     <option value="noivas">Noivas</option>
                                     <option value="formandas">Formandas</option>
@@ -231,12 +285,33 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
   const [qrValue, setQrValue] = useState('https://laraluizamakeup.com.br');
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
   
   // States for complex list editing
   const [editingServiceIndex, setEditingServiceIndex] = useState<number | null>(null);
   const [editingGalleryIndex, setEditingGalleryIndex] = useState<number | null>(null);
+  const [waitlistCount, setWaitlistCount] = useState<number | string>('...');
 
-  const { content, updateContent, updateNestedContent, saveToSupabase } = useContent();
+  const { content, updateContent, updateNestedContent, saveToSupabase, reloadFromSupabase } = useContent();
+
+  useEffect(() => {
+    const fetchWaitlistCount = async () => {
+        try {
+            const { count, error } = await supabase
+                .from('waitlist')
+                .select('*', { count: 'exact', head: true });
+            
+            if (!error && count !== null) {
+                setWaitlistCount(count);
+            } else {
+                setWaitlistCount(0);
+            }
+        } catch (e) {
+            setWaitlistCount(0);
+        }
+    };
+    fetchWaitlistCount();
+  }, []);
 
   const menuItems = [
     { id: 'dash', label: 'Dashboard', icon: LayoutDashboard },
@@ -275,11 +350,19 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
     }
   };
 
+  const handleRevert = async () => {
+    if (confirm('Tem certeza que deseja descartar todas as alterações não salvas?')) {
+        setIsReverting(true);
+        await reloadFromSupabase();
+        setIsReverting(false);
+    }
+  };
+
   const renderEditor = () => (
     <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-200px)]">
       {/* Sub-sidebar do Editor */}
-      <div className="w-full lg:w-72 flex flex-col gap-2 overflow-y-auto custom-scrollbar pr-2">
-        <h4 className="text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 px-2 sticky top-0 bg-brand-charcoal z-10 py-2">Seções do Site</h4>
+      <div className="w-full lg:w-72 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto custom-scrollbar pb-4 lg:pb-0 lg:pr-2 hide-scrollbar">
+        <h4 className="hidden lg:block text-[10px] uppercase tracking-widest text-white/40 font-bold mb-2 px-2 sticky top-0 bg-brand-charcoal z-10 py-2">Seções do Site</h4>
         {editorSectionsList.map((section) => (
           <button
             key={section.id}
@@ -288,7 +371,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                 setEditingServiceIndex(null);
                 setEditingGalleryIndex(null);
             }}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-xs uppercase tracking-widest font-bold text-left ${
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-xs uppercase tracking-widest font-bold text-left shrink-0 ${
               editorSection === section.id 
                 ? 'bg-white/10 text-brand-gold border border-brand-gold/20' 
                 : 'text-white/50 hover:bg-white/5 hover:text-white'
@@ -579,18 +662,18 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                                                 <div className="flex gap-2">
                                                     <button 
                                                         onClick={() => setEditingGalleryIndex(idx)}
-                                                        className="p-1.5 bg-brand-gold text-brand-dark rounded-full hover:scale-110"
+                                                        className="p-3 bg-brand-gold text-brand-dark rounded-full hover:scale-110"
                                                     >
-                                                        <Edit size={12} />
+                                                        <Edit size={16} />
                                                     </button>
                                                     <button 
                                                         onClick={() => {
                                                             const newImages = content.artLab.galleryImages.filter((_, i) => i !== idx);
                                                             updateNestedContent(['artLab', 'galleryImages'], newImages);
                                                         }}
-                                                        className="p-1.5 bg-red-500 text-white rounded-full hover:scale-110"
+                                                        className="p-3 bg-red-500 text-white rounded-full hover:scale-110"
                                                     >
-                                                        <Trash2 size={12} />
+                                                        <Trash2 size={16} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -800,11 +883,11 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                                                 updateNestedContent(['testimonials', 'items'], newItems);
                                             }} />
                                          </div>
-                                         <button className="p-1 bg-red-500/20 text-red-500 rounded hover:bg-red-500 hover:text-white" onClick={() => {
+                                         <button className="p-3 bg-red-500/20 text-red-500 rounded-xl hover:bg-red-500 hover:text-white" onClick={() => {
                                              const newItems = content.testimonials.items.filter((_, idx) => idx !== i);
                                              updateNestedContent(['testimonials', 'items'], newItems);
                                          }}>
-                                             <Trash2 size={12} />
+                                             <Trash2 size={16} />
                                          </button>
                                     </div>
                                 </div>
@@ -843,9 +926,9 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                                             const newItems = content.faq.items.filter((_, idx) => idx !== i);
                                             updateNestedContent(['faq', 'items'], newItems);
                                         }}
-                                        className="text-white/20 hover:text-red-500"
+                                        className="text-white/20 hover:text-red-500 p-2 -m-2"
                                     >
-                                        <Trash2 size={12} />
+                                        <Trash2 size={16} />
                                     </button>
                                 </div>
                                 <input 
@@ -920,8 +1003,13 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
         </div>
 
         {/* Floating Action Bar */}
-        <div className="sticky bottom-0 left-0 right-0 pt-8 mt-8 border-t border-white/5 bg-brand-charcoal z-30 flex justify-end gap-4">
-            <button className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 text-xs uppercase tracking-widest font-bold transition-all">
+        <div className="sticky bottom-24 lg:bottom-0 left-0 right-0 pt-4 pb-4 lg:pt-8 lg:pb-0 mt-8 border-t border-white/5 bg-brand-charcoal z-30 flex justify-end gap-4">
+            <button 
+                onClick={handleRevert}
+                disabled={isReverting}
+                className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 text-xs uppercase tracking-widest font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+            >
+                {isReverting ? <Loader2 size={14} className="animate-spin" /> : null}
                 Reverter
             </button>
             <button 
@@ -1007,7 +1095,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard title="Visitas Hoje" value="1,204" color="brand-gold" />
                     <StatCard title="Cliques no WhatsApp" value="86" color="brand-rose" />
-                    <StatCard title="Leads Cursos" value="12" color="white" />
+                    <StatCard title="Leads Cursos" value={waitlistCount.toString()} color="white" />
                     
                     <div className="md:col-span-3 bg-brand-charcoal rounded-3xl p-8 border border-white/5">
                     <h3 className="font-serif text-xl mb-6 text-brand-gold">Visão Geral do Conteúdo</h3>
@@ -1040,7 +1128,30 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                     <GalleryManager content={content} updateContent={updateContent} />
                 )}
 
-                {activeTab === 'qr' && <div className="p-10 text-center text-white/50">QR Code Generator</div>}
+                {activeTab === 'qr' && (
+                    <div className="flex flex-col items-center justify-center py-20">
+                        <h2 className="text-3xl font-serif text-white italic mb-2">QR Code</h2>
+                        <p className="text-white/40 text-xs uppercase tracking-widest mb-12">Compartilhe seu site facilmente</p>
+                        
+                        <div className="bg-white p-8 rounded-3xl shadow-2xl mb-8">
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(window.location.origin)}`} 
+                                alt="QR Code do Site" 
+                                className="w-64 h-64"
+                            />
+                        </div>
+                        
+                        <a 
+                            href={`https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(window.location.origin)}`}
+                            download="qrcode-laraluiza.png"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-8 py-4 bg-brand-gold text-brand-dark rounded-full font-bold uppercase tracking-widest text-xs hover:scale-105 transition-transform flex items-center gap-2"
+                        >
+                            <Upload size={16} className="rotate-180" /> Baixar QR Code em Alta Qualidade
+                        </a>
+                    </div>
+                )}
                 {activeTab === 'dns' && <div className="p-10 text-center text-white/50">DNS Settings</div>}
                 
             </motion.div>
@@ -1063,7 +1174,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
       </main>
 
       {/* Mobile Bottom Nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-brand-charcoal/90 backdrop-blur-xl border-t border-white/10 z-50 px-6 py-4 pb-8 flex justify-between items-center">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-brand-charcoal/90 backdrop-blur-xl border-t border-white/10 z-50 px-6 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] flex justify-between items-center">
         {menuItems.slice(0, 4).map((item) => (
           <button
             key={item.id}

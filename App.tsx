@@ -85,38 +85,40 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden bg-brand-dark border-b border-white/10 overflow-hidden"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="lg:hidden fixed inset-0 z-40 bg-brand-dark/95 backdrop-blur-xl overflow-y-auto pt-24 pb-8"
           >
-            <div className="flex flex-col p-6 gap-6">
-              {content.navbar.items.map((item) => (
+            <div className="flex flex-col p-8 gap-8 min-h-full justify-center">
+              {content.navbar.items.map((item: any) => (
                 <a 
                   key={item.href} 
                   href={item.href} 
                   onClick={() => setIsOpen(false)}
-                  className="text-sm uppercase tracking-widest font-sans border-b border-white/5 pb-2"
+                  className="text-2xl text-center uppercase tracking-widest font-serif text-white/80 hover:text-brand-gold transition-colors"
                 >
                   {item.label}
                 </a>
               ))}
               
-              <button 
-                onClick={() => { setIsOpen(false); onOpenAdmin(); }}
-                className="text-xs uppercase tracking-widest font-sans border-b border-white/5 pb-2 text-white/40 hover:text-brand-gold text-left flex items-center gap-2"
-              >
-                <LogIn size={12} /> Login Administrativo
-              </button>
+              <div className="h-[1px] w-12 bg-brand-gold/30 mx-auto my-4" />
 
               <a 
                 href={content.navbar.ctaLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-4 bg-brand-gold text-brand-dark text-center rounded-xl font-bold uppercase"
+                className="w-full py-4 bg-brand-gold text-brand-dark text-center rounded-full font-bold uppercase tracking-widest"
               >
                 {content.navbar.ctaText}
               </a>
+
+              <button 
+                onClick={() => { setIsOpen(false); onOpenAdmin(); }}
+                className="mt-8 text-xs uppercase tracking-widest font-sans text-white/40 hover:text-brand-gold flex items-center justify-center gap-2"
+              >
+                <LogIn size={14} /> Login Administrativo
+              </button>
             </div>
           </motion.div>
         )}
@@ -157,7 +159,7 @@ const FloatingCTA = () => {
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.1, rotate: 5 }}
-      className="fixed bottom-8 right-8 z-[100] bg-green-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center"
+      className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-[100] bg-green-500 text-white p-4 rounded-full shadow-2xl flex items-center justify-center"
     >
       <MessageCircle size={32} />
       <span className="absolute -top-2 -left-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold animate-bounce uppercase tracking-tighter">
@@ -170,6 +172,30 @@ const FloatingCTA = () => {
 const WaitlistPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { content } = useContent();
   const data = content.education.waitlistPopup;
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus('loading');
+    try {
+      const { error } = await supabase.from('waitlist').insert([{ name, email, phone }]);
+      if (error) throw error;
+      setStatus('success');
+      setTimeout(() => {
+        onClose();
+        setStatus('idle');
+        setName('');
+        setEmail('');
+        setPhone('');
+      }, 3000);
+    } catch (err) {
+      console.error('Error saving to waitlist:', err);
+      setStatus('error');
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -189,12 +215,12 @@ const WaitlistPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
             className="relative bg-brand-charcoal border border-brand-rose/30 rounded-3xl p-8 md:p-12 max-w-lg w-full shadow-2xl overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-4">
-              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors">
+              <button onClick={onClose} className="text-white/40 hover:text-white transition-colors z-10 relative">
                 <X size={24} />
               </button>
             </div>
             
-            <div className="flex flex-col items-center text-center">
+            <div className="flex flex-col items-center text-center relative z-10">
               <div className="relative mb-6">
                 <div className="w-20 h-20 bg-brand-rose/10 rounded-full flex items-center justify-center animate-pulse">
                   <Heart className="text-brand-rose" size={40} fill="rgba(229, 189, 187, 0.2)" />
@@ -207,26 +233,76 @@ const WaitlistPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                 {data.text}
               </p>
               
-              <a 
-                href={content.navbar.ctaLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-5 bg-brand-rose text-brand-dark rounded-xl font-bold uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform flex items-center justify-center gap-3 shadow-xl"
-              >
-                {data.buttonText} <MessageCircle size={18} />
-              </a>
+              {status === 'success' ? (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="w-full p-6 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 flex flex-col items-center gap-3"
+                >
+                  <CheckCircle2 size={32} />
+                  <span className="font-bold uppercase tracking-widest text-xs">Inscrição Confirmada!</span>
+                  <span className="text-xs opacity-80">Entraremos em contato em breve.</span>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleSubmit} className="w-full space-y-4 text-left">
+                  {status === 'error' && (
+                    <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-xs text-center">
+                      Ocorreu um erro. Tente novamente ou contate via WhatsApp.
+                    </div>
+                  )}
+                  <div>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="Seu Nome Completo" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-rose outline-none text-sm transition-all text-white/80 focus:bg-white/5"
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      type="email" 
+                      required
+                      placeholder="Seu E-mail" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-rose outline-none text-sm transition-all text-white/80 focus:bg-white/5"
+                    />
+                  </div>
+                  <div>
+                    <input 
+                      type="tel" 
+                      required
+                      placeholder="Seu WhatsApp (com DDD)" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full bg-brand-dark border border-white/10 p-4 rounded-xl focus:border-brand-rose outline-none text-sm transition-all text-white/80 focus:bg-white/5"
+                    />
+                  </div>
+                  <button 
+                    type="submit"
+                    disabled={status === 'loading'}
+                    className="w-full py-5 bg-brand-rose text-brand-dark rounded-xl font-bold uppercase tracking-widest text-xs hover:scale-[1.02] transition-transform flex items-center justify-center gap-3 shadow-xl disabled:opacity-50"
+                  >
+                    {status === 'loading' ? <Loader2 className="animate-spin" size={18} /> : (
+                      <>{data.buttonText} <MessageCircle size={18} /></>
+                    )}
+                  </button>
+                </form>
+              )}
               
               <button 
                 onClick={onClose}
-                className="mt-6 text-[10px] uppercase tracking-widest text-white/30 hover:text-white transition-colors font-bold"
+                className="mt-6 text-[10px] uppercase tracking-widest text-white/30 hover:text-white transition-colors font-bold relative z-10"
               >
                 Voltar para o site
               </button>
             </div>
 
             {/* Rose Glow Accents */}
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-rose/10 rounded-full blur-3xl" />
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-gold/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-brand-rose/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -top-10 -right-10 w-40 h-40 bg-brand-gold/10 rounded-full blur-3xl pointer-events-none" />
           </motion.div>
         </div>
       )}
@@ -370,7 +446,7 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         return { 
           columns: 'columns-2 lg:columns-3', 
           gap: 'gap-4 space-y-4',
-          textClass: 'opacity-0 group-hover:opacity-100'
+          textClass: 'opacity-100 lg:opacity-0 lg:group-hover:opacity-100'
         };
       case 'small': 
         return { 
@@ -382,7 +458,7 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         return { 
           columns: 'columns-2 lg:columns-3', 
           gap: 'gap-4 space-y-4',
-          textClass: 'opacity-0 group-hover:opacity-100'
+          textClass: 'opacity-100 lg:opacity-0 lg:group-hover:opacity-100'
         };
     }
   };
@@ -604,9 +680,9 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
                 <img src={content.concept.image} alt="Conceito Lara Luiza" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 ring-1 ring-inset ring-brand-gold/20" />
               </div>
-              <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-brand-gold flex flex-col items-center justify-center text-brand-dark p-6 rounded-2xl shadow-2xl">
-                <span className="text-4xl font-serif font-bold italic">{content.concept.yearsNumber}</span>
-                <span className="text-[10px] uppercase tracking-widest font-bold text-center mt-2">{content.concept.yearsText}</span>
+              <div className="absolute -bottom-4 -right-4 md:-bottom-8 md:-right-8 w-32 h-32 md:w-48 md:h-48 bg-brand-gold flex flex-col items-center justify-center text-brand-dark p-4 md:p-6 rounded-2xl shadow-2xl">
+                <span className="text-3xl md:text-4xl font-serif font-bold italic">{content.concept.yearsNumber}</span>
+                <span className="text-[8px] md:text-[10px] uppercase tracking-widest font-bold text-center mt-1 md:mt-2">{content.concept.yearsText}</span>
               </div>
             </motion.div>
 
@@ -695,7 +771,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
                 whileHover={{ y: -10 }}
                 className="group relative h-[500px] overflow-hidden rounded-2xl cursor-pointer"
               >
-                <img src={service.image} alt={service.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
+                <img src={service.image} alt={service.title} className="w-full h-full object-cover grayscale-0 lg:grayscale lg:group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent opacity-80" />
                 <div className="absolute bottom-0 left-0 p-8 w-full">
                   <h3 className="text-2xl font-serif mb-2">{service.title}</h3>
@@ -722,7 +798,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
             className="flex flex-col items-center mb-12"
           >
              <Palette size={60} className="text-brand-rose mb-6 animate-pulse" />
-             <h2 className="text-5xl md:text-8xl font-serif italic mb-6">{content.artLab.title}</h2>
+             <h2 className="text-4xl md:text-6xl lg:text-8xl font-serif italic mb-6">{content.artLab.title}</h2>
              <p className="max-w-xl text-lg text-white/60">
                {content.artLab.description}
              </p>
