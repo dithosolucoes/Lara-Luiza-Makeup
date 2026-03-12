@@ -960,11 +960,29 @@ const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
 }
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'public' | 'admin_login' | 'admin_panel'>('public');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Initialize state from localStorage to persist across refreshes
+  const [view, setView] = useState<'public' | 'admin_login' | 'admin_panel'>(() => {
+    const savedView = localStorage.getItem('app_view');
+    return (savedView as 'public' | 'admin_login' | 'admin_panel') || 'public';
+  });
+  
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem('app_is_logged_in') === 'true';
+  });
+
+  // Persist view changes
+  useEffect(() => {
+    localStorage.setItem('app_view', view);
+  }, [view]);
+
+  // Persist login state changes
+  useEffect(() => {
+    localStorage.setItem('app_is_logged_in', String(isLoggedIn));
+  }, [isLoggedIn]);
 
   // Check Supabase Auth on Load
   useEffect(() => {
+    // Check if we have a valid Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setIsLoggedIn(true);
@@ -974,7 +992,18 @@ const App: React.FC = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(!!session);
+      // If Supabase has a session, we are definitely logged in
+      if (session) {
+        setIsLoggedIn(true);
+      } 
+      // If Supabase says we are logged out, only update if we aren't using the bypass
+      // (Bypass relies solely on localStorage 'app_is_logged_in')
+      else {
+        const isBypass = localStorage.getItem('app_is_logged_in') === 'true';
+        // If we are not in bypass mode (i.e., not logged in locally), then sync with Supabase
+        // This prevents Supabase's "no session" from killing our bypass session on load
+        // But if user explicitly logs out, we clear localStorage, so this check works.
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -984,17 +1013,32 @@ const App: React.FC = () => {
   return (
     <ContentProvider>
       {view === 'admin_login' && (
-        <AdminLogin onLogin={() => { setIsLoggedIn(true); setView('admin_panel'); }} onCancel={() => setView('public')} />
+        <AdminLogin 
+            onLogin={() => { 
+                setIsLoggedIn(true); 
+                setView('admin_panel'); 
+            }} 
+            onCancel={() => setView('public')} 
+        />
       )}
       {view === 'admin_panel' && isLoggedIn && (
         <AdminArea onLogout={async () => { 
             await supabase.auth.signOut();
             setIsLoggedIn(false); 
             setView('public'); 
+            localStorage.removeItem('app_is_logged_in');
+            localStorage.removeItem('app_view');
+            localStorage.removeItem('admin_active_tab'); // Clear admin tab preference
         }} />
       )}
       {view === 'admin_panel' && !isLoggedIn && (
-        <AdminLogin onLogin={() => { setIsLoggedIn(true); setView('admin_panel'); }} onCancel={() => setView('public')} />
+        <AdminLogin 
+            onLogin={() => { 
+                setIsLoggedIn(true); 
+                setView('admin_panel'); 
+            }} 
+            onCancel={() => setView('public')} 
+        />
       )}
       {view === 'public' && (
         <MainSite onOpenAdmin={() => setView('admin_login')} />

@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, Image as ImageIcon, FileText, 
@@ -210,8 +210,24 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
 };
 
 export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'dash' | 'editor' | 'media' | 'qr' | 'dns'>('dash');
-  const [editorSection, setEditorSection] = useState<EditorSection>('global');
+  const [activeTab, setActiveTab] = useState<'dash' | 'editor' | 'media' | 'qr' | 'dns'>(() => {
+    const savedTab = localStorage.getItem('admin_active_tab');
+    return (savedTab as 'dash' | 'editor' | 'media' | 'qr' | 'dns') || 'dash';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_active_tab', activeTab);
+  }, [activeTab]);
+
+  const [editorSection, setEditorSection] = useState<EditorSection>(() => {
+    const savedSection = localStorage.getItem('admin_editor_section');
+    return (savedSection as EditorSection) || 'global';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_editor_section', editorSection);
+  }, [editorSection]);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [qrValue, setQrValue] = useState('https://laraluizamakeup.com.br');
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -924,7 +940,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-brand-dark text-white font-sans selection:bg-brand-gold selection:text-brand-dark">
       {/* Sidebar Principal */}
-      <aside className="w-full lg:w-72 bg-brand-charcoal border-r border-white/5 p-6 flex flex-col z-40">
+      <aside className="hidden lg:flex w-72 bg-brand-charcoal border-r border-white/5 p-6 flex-col z-40 h-screen sticky top-0">
         <div className="mb-10 px-4">
           <span className="font-serif text-xl tracking-widest text-brand-gold font-bold uppercase block">{content.navbar.brandName}</span>
           <span className="text-[8px] tracking-[0.4em] text-brand-rose uppercase">CMS Admin v3.0</span>
@@ -957,7 +973,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-8 lg:p-12 overflow-y-auto max-h-screen custom-scrollbar relative">
+      <main className="flex-1 p-6 md:p-8 lg:p-12 pb-24 lg:pb-12 overflow-y-auto max-h-screen custom-scrollbar relative">
         <header className="mb-8 md:mb-12 flex justify-between items-center">
           <div>
             <div className="flex items-center gap-2 text-white/30 text-[10px] uppercase tracking-widest mb-2 font-bold">
@@ -1045,6 +1061,69 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             )}
         </AnimatePresence>
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-brand-charcoal/90 backdrop-blur-xl border-t border-white/10 z-50 px-6 py-4 pb-8 flex justify-between items-center">
+        {menuItems.slice(0, 4).map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id as any)}
+            className={`flex flex-col items-center gap-1 transition-colors ${
+              activeTab === item.id ? 'text-brand-gold' : 'text-white/40'
+            }`}
+          >
+            <item.icon size={20} />
+            <span className="text-[8px] uppercase tracking-widest font-bold">{item.label.split(' ')[0]}</span>
+          </button>
+        ))}
+        
+        <div className="relative">
+            <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`flex flex-col items-center gap-1 transition-colors ${
+                isMobileMenuOpen ? 'text-brand-gold' : 'text-white/40'
+                }`}
+            >
+                <Menu size={20} />
+                <span className="text-[8px] uppercase tracking-widest font-bold">Mais</span>
+            </button>
+
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                        className="absolute bottom-full right-0 mb-4 w-48 bg-brand-charcoal border border-white/10 rounded-2xl shadow-2xl overflow-hidden p-2"
+                    >
+                        {menuItems.slice(4).map((item) => (
+                             <button
+                                key={item.id}
+                                onClick={() => {
+                                    setActiveTab(item.id as any);
+                                    setIsMobileMenuOpen(false);
+                                }}
+                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
+                                    activeTab === item.id ? 'bg-brand-gold text-brand-dark font-bold' : 'text-white/60 hover:bg-white/5'
+                                }`}
+                            >
+                                <item.icon size={16} />
+                                <span className="text-xs uppercase tracking-widest">{item.label}</span>
+                            </button>
+                        ))}
+                        <div className="h-[1px] bg-white/5 my-2" />
+                        <button 
+                            onClick={onLogout}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-all text-left"
+                        >
+                            <LogOut size={16} />
+                            <span className="text-xs uppercase tracking-widest">Sair</span>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };
