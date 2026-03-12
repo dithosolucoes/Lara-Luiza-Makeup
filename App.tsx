@@ -12,9 +12,9 @@ import { createClient } from '@supabase/supabase-js';
 import { AdminArea } from './AdminArea';
 import { ContentProvider, useContent } from './ContentContext';
 
-// Initialize Supabase (CORRIGIDO: Usando a chave JWT correta)
-const supabaseUrl = 'https://xjpzrdvdmusogthzypzp.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcHpyZHZkbXVzb2d0aHp5cHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjY4NTUsImV4cCI6MjA4NjcwMjg1NX0.HJh4nbE_vsTsP_QEUCbbJUyT13P5dGXLqfyf5Iop39Y';
+// Initialize Supabase
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xjpzrdvdmusogthzypzp.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcHpyZHZkbXVzb2d0aHp5cHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjY4NTUsImV4cCI6MjA4NjcwMjg1NX0.HJh4nbE_vsTsP_QEUCbbJUyT13P5dGXLqfyf5Iop39Y';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const trackWhatsAppClick = async () => {
@@ -338,7 +338,7 @@ const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void; onCancel: () =
     });
 
     if (error) {
-      setError('Credenciais inválidas. Tente novamente.');
+      setError(error.message === 'Invalid login credentials' ? 'Credenciais inválidas. Tente novamente.' : error.message);
       setLoading(false);
     } else {
       onLogin();

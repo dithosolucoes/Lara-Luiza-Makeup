@@ -1101,26 +1101,6 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             )}
 
         </div>
-
-        {/* Floating Action Bar */}
-        <div className="sticky bottom-24 lg:bottom-0 left-0 right-0 pt-4 pb-4 lg:pt-8 lg:pb-0 mt-8 border-t border-white/5 bg-brand-charcoal z-30 flex justify-end gap-4">
-            <button 
-                onClick={handleRevert}
-                disabled={isReverting}
-                className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 text-xs uppercase tracking-widest font-bold transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-                {isReverting ? <Loader2 size={14} className="animate-spin" /> : null}
-                Reverter
-            </button>
-            <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-8 py-3 bg-brand-gold text-brand-dark rounded-xl text-xs uppercase tracking-widest font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.2)] disabled:opacity-50"
-            >
-                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
-                {isSaving ? 'Salvando...' : 'Salvar Tudo'}
-            </button>
-        </div>
       </div>
     </div>
   );
@@ -1326,6 +1306,28 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                 
             </motion.div>
         </AnimatePresence>
+
+        {/* Floating Action Bar */}
+        {(activeTab === 'editor' || activeTab === 'media') && (
+            <div className="fixed bottom-0 left-0 lg:left-72 right-0 p-4 lg:p-6 border-t border-white/5 bg-brand-charcoal/95 backdrop-blur-md z-50 flex justify-end gap-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                <button 
+                    onClick={handleRevert}
+                    disabled={isReverting}
+                    className="px-6 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 text-xs uppercase tracking-widest font-bold transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                    {isReverting ? <Loader2 size={14} className="animate-spin" /> : null}
+                    Reverter
+                </button>
+                <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="px-8 py-3 bg-brand-gold text-brand-dark rounded-xl text-xs uppercase tracking-widest font-bold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.2)] disabled:opacity-50"
+                >
+                    {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} 
+                    {isSaving ? 'Salvando...' : 'Salvar Tudo'}
+                </button>
+            </div>
+        )}
 
         {/* Toast de Salvo */}
         <AnimatePresence>
