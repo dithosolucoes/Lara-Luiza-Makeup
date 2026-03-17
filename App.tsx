@@ -6,7 +6,7 @@ import {
   ChevronRight, ArrowRight, Star,
   Shield, Palette, Sparkles, MessageCircle,
   ShieldCheck, GraduationCap, Square, LayoutGrid, Grid3X3,
-  Heart, Sparkle, Lock, LogIn
+  Heart, Sparkle, Lock, LogIn, Check, Loader2
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { AdminArea } from './AdminArea';
@@ -38,57 +38,59 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled ? 'glass py-4 shadow-lg border-b border-brand-gold/10' : 'py-8'}`}>
-      <div className="container mx-auto px-6 flex justify-between items-center">
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex flex-col"
-        >
-          <span className="font-serif text-2xl tracking-widest text-brand-gold font-bold uppercase">{content.navbar.brandName}</span>
-          <span className="text-[10px] tracking-[0.3em] font-sans text-white/50 uppercase">{content.navbar.brandSubtitle}</span>
-        </motion.div>
+    <>
+      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled || isOpen ? 'glass py-4 shadow-lg border-b border-brand-gold/10' : 'py-8'}`}>
+        <div className="container mx-auto px-6 flex justify-between items-center">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col relative z-50"
+          >
+            <span className="font-serif text-2xl tracking-widest text-brand-gold font-bold uppercase">{content.navbar.brandName}</span>
+            <span className="text-[10px] tracking-[0.3em] font-sans text-white/50 uppercase">{content.navbar.brandSubtitle}</span>
+          </motion.div>
 
-        {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-10">
-          {content.navbar.items.map((item, idx) => (
+          {/* Desktop Nav */}
+          <div className="hidden lg:flex items-center gap-10">
+            {content.navbar.items.map((item: any, idx: number) => (
+              <motion.a
+                key={item.href}
+                href={item.href}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className="text-xs uppercase tracking-widest hover:text-brand-gold transition-colors font-sans"
+              >
+                {item.label}
+              </motion.a>
+            ))}
             <motion.a
-              key={item.href}
-              href={item.href}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className="text-xs uppercase tracking-widest hover:text-brand-gold transition-colors font-sans"
+              href={content.navbar.ctaLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={trackWhatsAppClick}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-6 py-2 bg-brand-gold text-brand-dark rounded-full text-xs font-bold uppercase tracking-widest"
             >
-              {item.label}
+              {content.navbar.ctaText}
             </motion.a>
-          ))}
-          <motion.a
-            href={content.navbar.ctaLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={trackWhatsAppClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-6 py-2 bg-brand-gold text-brand-dark rounded-full text-xs font-bold uppercase tracking-widest"
-          >
-            {content.navbar.ctaText}
-          </motion.a>
-          
-          <button 
-            onClick={onOpenAdmin}
-            className="text-white/20 hover:text-brand-gold transition-colors ml-2 p-2 rounded-full hover:bg-white/5"
-            title="Acesso Administrativo"
-          >
-            <LogIn size={14} />
+            
+            <button 
+              onClick={onOpenAdmin}
+              className="text-white/20 hover:text-brand-gold transition-colors ml-2 p-2 rounded-full hover:bg-white/5"
+              title="Acesso Administrativo"
+            >
+              <LogIn size={14} />
+            </button>
+          </div>
+
+          {/* Mobile Toggle */}
+          <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden text-white p-2 relative z-50">
+            {isOpen ? <X /> : <Menu />}
           </button>
         </div>
-
-        {/* Mobile Toggle */}
-        <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden text-white p-2">
-          {isOpen ? <X /> : <Menu />}
-        </button>
-      </div>
+      </nav>
 
       {/* Mobile Menu */}
       <AnimatePresence>
@@ -97,7 +99,7 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="lg:hidden fixed inset-0 z-40 bg-brand-dark/95 backdrop-blur-xl overflow-y-auto pt-24 pb-8"
+            className="lg:hidden fixed inset-0 z-40 bg-brand-dark/95 backdrop-blur-xl overflow-y-auto pt-32 pb-8"
           >
             <div className="flex flex-col p-8 gap-8 min-h-full justify-center">
               {content.navbar.items.map((item: any) => (
@@ -133,7 +135,7 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </>
   );
 };
 
@@ -250,7 +252,7 @@ const WaitlistPopup = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                   animate={{ opacity: 1, scale: 1 }}
                   className="w-full p-6 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 flex flex-col items-center gap-3"
                 >
-                  <CheckCircle2 size={32} />
+                  <Check size={32} />
                   <span className="font-bold uppercase tracking-widest text-xs">Inscrição Confirmada!</span>
                   <span className="text-xs opacity-80">Entraremos em contato em breve.</span>
                 </motion.div>
@@ -632,7 +634,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
   }, [isArtGalleryOpen, isWaitlistOpen]);
 
   return (
-    <div className="bg-brand-dark text-white selection:bg-brand-gold selection:text-brand-dark font-sans">
+    <div className="bg-brand-dark text-white selection:bg-brand-gold selection:text-brand-dark font-sans relative">
       <Navbar onOpenAdmin={onOpenAdmin} />
       <FloatingCTA />
       
@@ -805,14 +807,17 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {content.services.items.map((service: any, idx: number) => (
-              <motion.div
+              <motion.a
                 key={service.id}
+                href={`https://wa.me/5538992210136?text=Ol%C3%A1%21+Estava+vendo+o+site+e+gostaria+de+saber+mais+detalhes+e+valores+sobre+a+maquiagem+para+${encodeURIComponent(service.title)}.`}
+                target="_blank"
+                rel="noopener noreferrer"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
                 whileHover={{ y: -10 }}
-                className="group relative h-[500px] overflow-hidden rounded-2xl cursor-pointer"
+                className="group relative h-[500px] overflow-hidden rounded-2xl cursor-pointer block"
               >
                 <img src={service.image} alt={service.title} className="w-full h-full object-cover grayscale-0 lg:grayscale lg:group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent opacity-80" />
@@ -823,7 +828,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
                     Saiba Mais <ArrowRight size={14} />
                   </div>
                 </div>
-              </motion.div>
+              </motion.a>
             ))}
           </div>
         </div>
