@@ -414,8 +414,14 @@ const AdminLogin = ({ onLogin, onCancel }: { onLogin: () => void; onCancel: () =
   );
 };
 
-const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'noivas' | 'formandas' | 'sociais' | 'artisticas'>('all');
+const ArtGalleryOverlay = ({ isOpen, onClose, initialCategory = 'all' }: { isOpen: boolean; onClose: () => void; initialCategory?: 'all' | 'noivas' | 'formandas' | 'sociais' | 'artisticas' }) => {
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'noivas' | 'formandas' | 'sociais' | 'artisticas'>(initialCategory);
+  
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedCategory(initialCategory);
+    }
+  }, [isOpen, initialCategory]);
   const [gridDensity, setGridDensity] = useState<'large' | 'medium' | 'small'>('medium');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const { content } = useContent();
@@ -618,6 +624,7 @@ const ArtGalleryOverlay = ({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
 const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; content: any }) => {
   const [isArtGalleryOpen, setIsArtGalleryOpen] = useState(false);
+  const [initialGalleryCategory, setInitialGalleryCategory] = useState<'all' | 'noivas' | 'formandas' | 'sociais' | 'artisticas'>('all');
   const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
   
   const heroRef = useRef(null);
@@ -633,6 +640,18 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
     }
   }, [isArtGalleryOpen, isWaitlistOpen]);
 
+  const openGalleryWithCategory = (serviceTitle: string) => {
+    let category: 'all' | 'noivas' | 'formandas' | 'sociais' | 'artisticas' = 'all';
+    const titleLower = serviceTitle.toLowerCase();
+    
+    if (titleLower.includes('noiva')) category = 'noivas';
+    else if (titleLower.includes('social') || titleLower.includes('formatura')) category = 'sociais';
+    else if (titleLower.includes('art')) category = 'artisticas';
+    
+    setInitialGalleryCategory(category);
+    setIsArtGalleryOpen(true);
+  };
+
   return (
     <div className="bg-brand-dark text-white selection:bg-brand-gold selection:text-brand-dark font-sans relative">
       <Navbar onOpenAdmin={onOpenAdmin} />
@@ -641,6 +660,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
       <ArtGalleryOverlay 
         isOpen={isArtGalleryOpen} 
         onClose={() => setIsArtGalleryOpen(false)} 
+        initialCategory={initialGalleryCategory}
       />
 
       <WaitlistPopup 
@@ -807,11 +827,9 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {content.services.items.map((service: any, idx: number) => (
-              <motion.a
+              <motion.div
                 key={service.id}
-                href={`https://wa.me/5538992210136?text=Ol%C3%A1%21+Estava+vendo+o+site+e+gostaria+de+saber+mais+detalhes+e+valores+sobre+a+maquiagem+para+${encodeURIComponent(service.title)}.`}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={() => openGalleryWithCategory(service.title)}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -825,10 +843,10 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
                   <h3 className="text-2xl font-serif mb-2">{service.title}</h3>
                   <p className="text-sm text-white/70 line-clamp-2 mb-4">{service.description}</p>
                   <div className="flex items-center text-brand-gold font-bold text-xs uppercase tracking-widest gap-2">
-                    Saiba Mais <ArrowRight size={14} />
+                    Ver Portfólio <ArrowRight size={14} />
                   </div>
                 </div>
-              </motion.a>
+              </motion.div>
             ))}
           </div>
         </div>
