@@ -32,6 +32,12 @@ export interface GalleryImage {
   category: string;
 }
 
+export interface ImageFeedback {
+  id: string;
+  url: string;
+  alt: string;
+}
+
 // Full Site Content Structure
 export interface ContentState {
   global: {
@@ -114,6 +120,11 @@ export interface ContentState {
     title: string;
     subtitle: string;
     items: Testimonial[];
+  };
+  imageFeedbacks: {
+    title: string;
+    subtitle: string;
+    items: ImageFeedback[];
   };
   faq: {
     title: string;

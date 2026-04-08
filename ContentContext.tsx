@@ -103,6 +103,15 @@ const defaultContent: ContentState = {
     title: 'Relatos de Confiança',
     items: TESTIMONIALS
   },
+  imageFeedbacks: {
+    subtitle: 'Feedbacks Reais',
+    title: 'O que dizem nossas clientes',
+    items: [
+      { id: '1', url: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop', alt: 'Feedback 1' },
+      { id: '2', url: 'https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?q=80&w=1000&auto=format&fit=crop', alt: 'Feedback 2' },
+      { id: '3', url: 'https://images.unsplash.com/photo-1611162618071-b39a2ec055fb?q=80&w=1000&auto=format&fit=crop', alt: 'Feedback 3' },
+    ]
+  },
   faq: {
     subtitle: 'Suporte',
     title: 'Dúvidas Frequentes',

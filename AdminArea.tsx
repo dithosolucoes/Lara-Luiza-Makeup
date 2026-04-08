@@ -29,6 +29,7 @@ type EditorSection =
   | 'education'
   | 'about' 
   | 'testimonials'
+  | 'imageFeedbacks'
   | 'faq'
   | 'location'
   | 'footer';
@@ -431,7 +432,8 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
     { id: 'artlab', label: 'Art Lab & Galeria', icon: Palette },
     { id: 'education', label: 'Cursos & Popups', icon: GraduationCap },
     { id: 'about', label: 'Sobre a Lara', icon: FileText },
-    { id: 'testimonials', label: 'Depoimentos', icon: MessageCircle },
+    { id: 'testimonials', label: 'Depoimentos (Texto)', icon: MessageCircle },
+    { id: 'imageFeedbacks', label: 'Feedbacks (Prints)', icon: ImageIcon },
     { id: 'faq', label: 'Perguntas (FAQ)', icon: CheckCircle2 },
     { id: 'location', label: 'Localização & Contato', icon: MapPin },
     { id: 'footer', label: 'Rodapé', icon: Type },
@@ -1015,6 +1017,106 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                         >
                             + Adicionar Depoimento
                         </button>
+                     </div>
+                </div>
+            )}
+
+            {/* 10.5 IMAGE FEEDBACKS */}
+            {editorSection === 'imageFeedbacks' && (
+                <div>
+                     <InputGroup label="Título da Seção" value={content.imageFeedbacks?.title || ''} onChange={(v) => updateNestedContent(['imageFeedbacks', 'title'], v)} />
+                     <InputGroup label="Subtítulo" value={content.imageFeedbacks?.subtitle || ''} onChange={(v) => updateNestedContent(['imageFeedbacks', 'subtitle'], v)} />
+                     
+                     <div className="mt-6">
+                        <label className="text-[10px] uppercase tracking-widest text-white/40 mb-4 block font-bold">Prints de Feedback</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {content.imageFeedbacks?.items?.map((img, idx) => (
+                                <div key={idx} className="group relative aspect-[9/16] rounded-xl overflow-hidden border border-white/10 bg-brand-dark">
+                                    <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <div className="p-1 bg-white/10 rounded hover:bg-white/20">
+                                            <ImageUpload label="" preview={img.url} onChange={(url) => {
+                                                const newItems = [...content.imageFeedbacks.items];
+                                                newItems[idx].url = url;
+                                                updateNestedContent(['imageFeedbacks', 'items'], newItems);
+                                            }} />
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                const newItems = content.imageFeedbacks.items.filter((_, i) => i !== idx);
+                                                updateNestedContent(['imageFeedbacks', 'items'], newItems);
+                                            }}
+                                            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            <button 
+                                onClick={() => {
+                                    const url = window.prompt("URL da nova imagem (print):");
+                                    if (url) {
+                                        const newItems = [...(content.imageFeedbacks?.items || []), { id: Date.now().toString(), url, alt: 'Feedback' }];
+                                        updateNestedContent(['imageFeedbacks', 'items'], newItems);
+                                    }
+                                }}
+                                className="aspect-[9/16] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/40 hover:text-brand-gold hover:border-brand-gold/50 transition-all"
+                            >
+                                <Plus size={24} />
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Adicionar Print</span>
+                            </button>
+                        </div>
+                     </div>
+                </div>
+            )}
+
+            {/* 10.5 IMAGE FEEDBACKS */}
+            {editorSection === 'imageFeedbacks' && (
+                <div>
+                     <InputGroup label="Título da Seção" value={content.imageFeedbacks?.title || ''} onChange={(v) => updateNestedContent(['imageFeedbacks', 'title'], v)} />
+                     <InputGroup label="Subtítulo" value={content.imageFeedbacks?.subtitle || ''} onChange={(v) => updateNestedContent(['imageFeedbacks', 'subtitle'], v)} />
+                     
+                     <div className="mt-6">
+                        <label className="text-[10px] uppercase tracking-widest text-white/40 mb-4 block font-bold">Prints de Feedback</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {content.imageFeedbacks?.items?.map((img: any, idx: number) => (
+                                <div key={idx} className="group relative aspect-[9/16] rounded-xl overflow-hidden border border-white/10 bg-brand-dark">
+                                    <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                        <div className="p-1 bg-white/10 rounded hover:bg-white/20">
+                                            <ImageUpload label="" preview={img.url} onChange={(url) => {
+                                                const newItems = [...content.imageFeedbacks.items];
+                                                newItems[idx].url = url;
+                                                updateNestedContent(['imageFeedbacks', 'items'], newItems);
+                                            }} />
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                const newItems = content.imageFeedbacks.items.filter((_: any, i: number) => i !== idx);
+                                                updateNestedContent(['imageFeedbacks', 'items'], newItems);
+                                            }}
+                                            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            <button 
+                                onClick={() => {
+                                    const url = window.prompt("URL da nova imagem (print):");
+                                    if (url) {
+                                        const newItems = [...(content.imageFeedbacks?.items || []), { id: Date.now().toString(), url, alt: 'Feedback' }];
+                                        updateNestedContent(['imageFeedbacks', 'items'], newItems);
+                                    }
+                                }}
+                                className="aspect-[9/16] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/40 hover:text-brand-gold hover:border-brand-gold/50 transition-all"
+                            >
+                                <Plus size={24} />
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Adicionar Print</span>
+                            </button>
+                        </div>
                      </div>
                 </div>
             )}

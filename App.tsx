@@ -1009,7 +1009,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
         <div className="container mx-auto px-6">
           <SectionHeading centered subtitle={content.testimonials.subtitle} title={content.testimonials.title} />
           
-          <div className="flex flex-nowrap md:grid md:grid-cols-3 gap-8 overflow-x-auto pb-8 snap-x no-scrollbar">
+          <div className="flex flex-nowrap gap-6 overflow-x-auto pb-8 snap-x no-scrollbar cursor-grab active:cursor-grabbing">
             {content.testimonials.items.map((t: any, i: number) => (
               <motion.div
                 key={t.id}
@@ -1017,15 +1017,15 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="min-w-[300px] flex-shrink-0 snap-center bg-brand-dark p-8 rounded-3xl border border-white/5 flex flex-col justify-between"
+                className="w-[300px] md:w-[400px] flex-shrink-0 snap-center bg-brand-dark p-8 rounded-3xl border border-white/5 flex flex-col justify-between h-[350px]"
               >
-                <div>
-                  <div className="flex gap-1 text-brand-gold mb-6">
+                <div className="overflow-y-auto custom-scrollbar pr-2">
+                  <div className="flex gap-1 text-brand-gold mb-4">
                     {[1, 2, 3, 4, 5].map(s => <Star key={s} size={14} fill="currentColor" />)}
                   </div>
-                  <p className="text-white/80 font-sans italic mb-8 leading-relaxed">"{t.content}"</p>
+                  <p className="text-white/80 font-sans italic leading-relaxed text-sm md:text-base">"{t.content}"</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 mt-6 pt-6 border-t border-white/5 shrink-0">
                   <img src={t.image} alt={t.name} className="w-12 h-12 rounded-full grayscale object-cover" />
                   <div>
                     <h5 className="font-bold text-sm text-brand-gold uppercase tracking-widest">{t.name}</h5>
@@ -1037,6 +1037,30 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
           </div>
         </div>
       </section>
+
+      {/* 8.5 IMAGE FEEDBACKS SECTION */}
+      {content.imageFeedbacks && content.imageFeedbacks.items && content.imageFeedbacks.items.length > 0 && (
+        <section className="py-24 bg-brand-dark overflow-hidden">
+          <div className="container mx-auto px-6">
+            <SectionHeading centered subtitle={content.imageFeedbacks.subtitle} title={content.imageFeedbacks.title} />
+            
+            <div className="flex flex-nowrap gap-6 overflow-x-auto pb-8 snap-x no-scrollbar cursor-grab active:cursor-grabbing">
+              {content.imageFeedbacks.items.map((img: any, i: number) => (
+                <motion.div
+                  key={img.id || i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="w-[260px] md:w-[300px] h-[460px] md:h-[530px] flex-shrink-0 snap-center rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+                >
+                  <img src={img.url} alt={img.alt || 'Feedback da cliente'} className="w-full h-full object-cover" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 9. FAQ SECTION */}
       <section className="py-24 bg-brand-dark">
