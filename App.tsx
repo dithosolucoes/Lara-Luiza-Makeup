@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { 
   Menu, X, Instagram, MapPin, Phone, 
-  ChevronRight, ArrowRight, Star,
+  ChevronRight, ChevronLeft, ArrowRight, Star,
   Shield, Palette, Sparkles, MessageCircle,
   ShieldCheck, GraduationCap, Square, LayoutGrid, Grid3X3,
   Heart, Sparkle, Lock, LogIn, Check, Loader2
@@ -423,7 +423,7 @@ const ArtGalleryOverlay = ({ isOpen, onClose, initialCategory = 'all' }: { isOpe
     }
   }, [isOpen, initialCategory]);
   const [gridDensity, setGridDensity] = useState<'large' | 'medium' | 'small'>('medium');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const { content } = useContent();
   const data = content.artLab;
   
@@ -444,6 +444,31 @@ const ArtGalleryOverlay = ({ isOpen, onClose, initialCategory = 'all' }: { isOpe
   const filteredImages = selectedCategory === 'all' 
     ? data.galleryImages 
     : data.galleryImages.filter(img => img.category === selectedCategory);
+
+  const handleNext = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (selectedIndex !== null) {
+      setSelectedIndex((selectedIndex + 1) % filteredImages.length);
+    }
+  };
+
+  const handlePrev = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (selectedIndex !== null) {
+      setSelectedIndex((selectedIndex - 1 + filteredImages.length) % filteredImages.length);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (selectedIndex === null) return;
+      if (e.key === 'ArrowRight') handleNext();
+      if (e.key === 'ArrowLeft') handlePrev();
+      if (e.key === 'Escape') setSelectedIndex(null);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedIndex, filteredImages.length]);
 
   const getLayoutConfig = () => {
     switch (gridDensity) {
@@ -553,7 +578,7 @@ const ArtGalleryOverlay = ({ isOpen, onClose, initialCategory = 'all' }: { isOpe
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.4, ease: "easeOut" }}
-                    onClick={() => setSelectedImage(img.url)}
+                    onClick={() => setSelectedIndex(idx)}
                     className="group relative break-inside-avoid rounded-2xl overflow-hidden cursor-zoom-in shadow-2xl border border-white/5"
                   >
                     <img 
@@ -586,33 +611,65 @@ const ArtGalleryOverlay = ({ isOpen, onClose, initialCategory = 'all' }: { isOpe
 
           {/* Lightbox Modal */}
           <AnimatePresence>
-            {selectedImage && (
+            {selectedIndex !== null && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                onClick={() => setSelectedImage(null)}
+                onClick={() => setSelectedIndex(null)}
                 className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
               >
                 <motion.button
                   className="absolute top-8 right-8 text-white/50 hover:text-white z-[310] p-4 bg-white/10 rounded-full backdrop-blur-md"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedImage(null);
+                    setSelectedIndex(null);
                   }}
                 >
                   <X size={24} />
                 </motion.button>
+
+                <button 
+                  onClick={handlePrev}
+                  className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-[310] p-4 bg-white/5 hover:bg-white/10 rounded-full backdrop-blur-md transition-all"
+                >
+                  <ChevronLeft size={32} />
+                </button>
+
+                <button 
+                  onClick={handleNext}
+                  className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-[310] p-4 bg-white/5 hover:bg-white/10 rounded-full backdrop-blur-md transition-all"
+                >
+                  <ChevronRight size={32} />
+                </button>
+
                 <motion.img
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
+                  key={selectedIndex}
+                  initial={{ scale: 0.9, opacity: 0, x: 100 }}
+                  animate={{ scale: 1, opacity: 1, x: 0 }}
+                  exit={{ scale: 0.9, opacity: 0, x: -100 }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  src={selectedImage}
-                  alt="Expanded view"
-                  className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                  src={filteredImages[selectedIndex].url}
+                  alt={filteredImages[selectedIndex].title}
+                  className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl cursor-grab active:cursor-grabbing"
                   onClick={(e) => e.stopPropagation()}
+                  drag="x"
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.7}
+                  onDragEnd={(e, { offset, velocity }) => {
+                    const swipe = offset.x;
+                    if (swipe < -50) {
+                      handleNext();
+                    } else if (swipe > 50) {
+                      handlePrev();
+                    }
+                  }}
                 />
+                
+                <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
+                  <p className="text-white font-serif text-xl">{filteredImages[selectedIndex].title}</p>
+                  <p className="text-white/60 text-sm mt-1">{selectedIndex + 1} / {filteredImages.length}</p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
