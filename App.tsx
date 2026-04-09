@@ -25,6 +25,84 @@ export const trackWhatsAppClick = async () => {
   }
 };
 
+const Preloader = ({ isLoading, onComplete }: { isLoading: boolean, onComplete: () => void }) => {
+  const [minTimePassed, setMinTimePassed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinTimePassed(true);
+    }, 3500); // Minimum 3.5 seconds
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (minTimePassed && !isLoading) {
+      // Start fade out
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 800); // 0.8s for fade out animation
+      return () => clearTimeout(timer);
+    }
+  }, [minTimePassed, isLoading, onComplete]);
+
+  const isFadingOut = minTimePassed && !isLoading;
+
+  return (
+    <motion.div
+      initial={{ opacity: 1 }}
+      animate={{ opacity: isFadingOut ? 0 : 1 }}
+      transition={{ duration: 0.8, ease: "easeInOut" }}
+      className="fixed inset-0 z-[9999] bg-brand-dark flex flex-col items-center justify-center overflow-hidden pointer-events-none"
+    >
+      <div className="relative flex items-center justify-center w-40 h-40">
+        {/* L Solid */}
+        <motion.div
+          initial={{ opacity: 0, x: -20, y: 20 }}
+          animate={{ opacity: 1, x: 0, y: 0 }}
+          transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
+          className="absolute font-serif text-[120px] md:text-[150px] text-brand-gold leading-none"
+          style={{ textShadow: '0 0 20px rgba(212, 175, 55, 0.2)' }}
+        >
+          L
+        </motion.div>
+        
+        {/* L Outline */}
+        <motion.div
+          initial={{ opacity: 0, x: 20, y: -20 }}
+          animate={{ opacity: 1, x: 16, y: 16 }} // Slightly offset
+          transition={{ duration: 1.2, delay: 0.6, ease: "easeOut" }}
+          className="absolute font-serif text-[120px] md:text-[150px] text-transparent leading-none"
+          style={{ WebkitTextStroke: '1px rgba(212, 175, 55, 0.8)' }}
+        >
+          L
+        </motion.div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1.8 }}
+        className="mt-12 flex flex-col items-center gap-2"
+      >
+        <span className="text-[10px] uppercase tracking-[0.3em] text-brand-gold font-bold">Lara Luíza</span>
+        <span className="text-[8px] uppercase tracking-[0.4em] text-white/40">Beauty</span>
+      </motion.div>
+      
+      {/* Fallback spinner if loading takes too long */}
+      {minTimePassed && isLoading && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute bottom-10 flex flex-col items-center gap-3"
+        >
+          <div className="w-4 h-4 border-t border-brand-gold rounded-full animate-spin"></div>
+          <span className="text-[8px] uppercase tracking-widest text-white/20">Carregando dados...</span>
+        </motion.div>
+      )}
+    </motion.div>
+  );
+};
+
 // Components
 const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -1173,6 +1251,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
 
 const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
   const { content, loading } = useContent();
+  const [showPreloader, setShowPreloader] = useState(true);
   
   useEffect(() => {
     // Track visit
@@ -1186,16 +1265,24 @@ const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
     trackVisit();
   }, []);
 
-  if (loading) {
-    return (
-        <div className="h-screen w-full bg-brand-dark flex flex-col items-center justify-center text-brand-gold gap-4">
-            <div className="w-10 h-10 border-t-2 border-brand-gold rounded-full animate-spin"></div>
-            <span className="text-xs uppercase tracking-widest animate-pulse">Carregando Experiência...</span>
-        </div>
-    );
-  }
-
-  return <LandingPage onOpenAdmin={onOpenAdmin} content={content} />;
+  return (
+    <>
+      {showPreloader && (
+        <Preloader 
+          isLoading={loading} 
+          onComplete={() => setShowPreloader(false)} 
+        />
+      )}
+      
+      {/* Render LandingPage only when data is loaded */}
+      {!loading && content ? (
+        <LandingPage onOpenAdmin={onOpenAdmin} content={content} />
+      ) : (
+        // Fallback empty div to prevent layout shift while loading if preloader is active
+        <div className="h-screen w-full bg-brand-dark" />
+      )}
+    </>
+  );
 }
 
 const App: React.FC = () => {
