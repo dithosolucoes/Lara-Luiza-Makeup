@@ -1082,7 +1082,8 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
         </div>
       </section>
 
-      {/* 8. TESTIMONIALS */}
+      {/* 8. TESTIMONIALS (Hidden for now, keeping only Image Feedbacks) */}
+      {/* 
       <section id="testimonials" className="py-24 bg-brand-charcoal overflow-hidden">
         <div className="container mx-auto px-6">
           <SectionHeading centered subtitle={content.testimonials.subtitle} title={content.testimonials.title} />
@@ -1115,6 +1116,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
           </div>
         </div>
       </section>
+      */}
 
       {/* 8.5 IMAGE FEEDBACKS SECTION */}
       {content.imageFeedbacks && content.imageFeedbacks.items && content.imageFeedbacks.items.length > 0 && (
