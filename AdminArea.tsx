@@ -1055,66 +1055,14 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                             ))}
                             <button 
                                 onClick={() => {
-                                    const url = window.prompt("URL da nova imagem (print):");
-                                    if (url) {
-                                        const newItems = [...(content.imageFeedbacks?.items || []), { id: Date.now().toString(), url, alt: 'Feedback' }];
-                                        updateNestedContent(['imageFeedbacks', 'items'], newItems);
-                                    }
+                                    const placeholderUrl = "https://images.unsplash.com/photo-1622737133809-d95047b9e673?auto=format&fit=crop&q=80"; // Imagem de placeholder
+                                    const newItems = [...(content.imageFeedbacks?.items || []), { id: Date.now().toString(), url: placeholderUrl, alt: 'Novo Feedback' }];
+                                    updateNestedContent(['imageFeedbacks', 'items'], newItems);
                                 }}
                                 className="aspect-[9/16] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/40 hover:text-brand-gold hover:border-brand-gold/50 transition-all"
                             >
                                 <Plus size={24} />
-                                <span className="text-[10px] uppercase tracking-widest font-bold">Adicionar Print</span>
-                            </button>
-                        </div>
-                     </div>
-                </div>
-            )}
-
-            {/* 10.5 IMAGE FEEDBACKS */}
-            {editorSection === 'imageFeedbacks' && (
-                <div>
-                     <InputGroup label="Título da Seção" value={content.imageFeedbacks?.title || ''} onChange={(v) => updateNestedContent(['imageFeedbacks', 'title'], v)} />
-                     <InputGroup label="Subtítulo" value={content.imageFeedbacks?.subtitle || ''} onChange={(v) => updateNestedContent(['imageFeedbacks', 'subtitle'], v)} />
-                     
-                     <div className="mt-6">
-                        <label className="text-[10px] uppercase tracking-widest text-white/40 mb-4 block font-bold">Prints de Feedback</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {content.imageFeedbacks?.items?.map((img: any, idx: number) => (
-                                <div key={idx} className="group relative aspect-[9/16] rounded-xl overflow-hidden border border-white/10 bg-brand-dark">
-                                    <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                        <div className="p-1 bg-white/10 rounded hover:bg-white/20">
-                                            <ImageUpload label="" preview={img.url} onChange={(url) => {
-                                                const newItems = [...content.imageFeedbacks.items];
-                                                newItems[idx].url = url;
-                                                updateNestedContent(['imageFeedbacks', 'items'], newItems);
-                                            }} />
-                                        </div>
-                                        <button 
-                                            onClick={() => {
-                                                const newItems = content.imageFeedbacks.items.filter((_: any, i: number) => i !== idx);
-                                                updateNestedContent(['imageFeedbacks', 'items'], newItems);
-                                            }}
-                                            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                            <button 
-                                onClick={() => {
-                                    const url = window.prompt("URL da nova imagem (print):");
-                                    if (url) {
-                                        const newItems = [...(content.imageFeedbacks?.items || []), { id: Date.now().toString(), url, alt: 'Feedback' }];
-                                        updateNestedContent(['imageFeedbacks', 'items'], newItems);
-                                    }
-                                }}
-                                className="aspect-[9/16] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/40 hover:text-brand-gold hover:border-brand-gold/50 transition-all"
-                            >
-                                <Plus size={24} />
-                                <span className="text-[10px] uppercase tracking-widest font-bold">Adicionar Print</span>
+                                <span className="text-[10px] uppercase tracking-widest font-bold">Novo Print</span>
                             </button>
                         </div>
                      </div>
