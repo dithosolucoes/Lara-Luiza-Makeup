@@ -11,6 +11,7 @@ import {
 import { createClient } from '@supabase/supabase-js';
 import { AdminArea } from './AdminArea';
 import { ContentProvider, useContent } from './ContentContext';
+import { GlossStore } from './GlossStore';
 
 // Initialize Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xjpzrdvdmusogthzypzp.supabase.co';
@@ -104,7 +105,7 @@ const Preloader = ({ isLoading, onComplete }: { isLoading: boolean, onComplete: 
 };
 
 // Components
-const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
+const Navbar: React.FC<{ onOpenAdmin: () => void; isGlossPage?: boolean }> = ({ onOpenAdmin, isGlossPage }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { content } = useContent();
@@ -115,9 +116,13 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const navClass = isGlossPage 
+    ? 'fixed top-0 left-0 w-full z-[200] py-4 bg-brand-dark shadow-lg border-b border-brand-gold/10' 
+    : `fixed top-0 left-0 w-full z-[200] transition-all duration-500 ${scrolled || isOpen ? 'glass py-4 shadow-lg border-b border-brand-gold/10' : 'py-8'}`;
+
   return (
     <>
-      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${scrolled || isOpen ? 'glass py-4 shadow-lg border-b border-brand-gold/10' : 'py-8'}`}>
+      <nav className={navClass}>
         <div className="container mx-auto px-6 flex justify-between items-center">
           <motion.div 
             initial={{ opacity: 0, x: -20 }}
@@ -130,6 +135,14 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-10">
+            <motion.a
+                href="#/loja"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-[10px] uppercase tracking-[0.4em] text-brand-gold font-bold hover:text-white transition-colors relative group"
+            >
+                Loja
+            </motion.a>
             {content.navbar.items.map((item: any, idx: number) => (
               <motion.a
                 key={item.href}
@@ -180,6 +193,13 @@ const Navbar: React.FC<{ onOpenAdmin: () => void }> = ({ onOpenAdmin }) => {
             className="lg:hidden fixed inset-0 z-40 bg-brand-dark/95 backdrop-blur-xl overflow-y-auto pt-32 pb-8"
           >
             <div className="flex flex-col p-8 gap-8 min-h-full justify-center">
+              <a 
+                  href="#/loja" 
+                  onClick={() => setIsOpen(false)}
+                  className="text-2xl text-center uppercase tracking-widest font-serif text-brand-gold hover:text-white transition-colors"
+                >
+                  Loja
+              </a>
               {content.navbar.items.map((item: any) => (
                 <a 
                   key={item.href} 
@@ -1254,6 +1274,7 @@ const LandingPage = ({ onOpenAdmin, content }: { onOpenAdmin: () => void; conten
 const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
   const { content, loading } = useContent();
   const [showPreloader, setShowPreloader] = useState(true);
+  const [hash, setHash] = useState(window.location.hash);
   
   useEffect(() => {
     // Track visit
@@ -1265,7 +1286,13 @@ const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
       }
     };
     trackVisit();
+
+    const handleHash = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
   }, []);
+
+  const isGlossPage = hash === '#/loja';
 
   return (
     <>
@@ -1276,9 +1303,18 @@ const MainSite = ({ onOpenAdmin }: { onOpenAdmin: () => void }) => {
         />
       )}
       
-      {/* Render LandingPage only when data is loaded */}
+      {/* Render selected page only when data is loaded */}
       {!loading && content ? (
-        <LandingPage onOpenAdmin={onOpenAdmin} content={content} />
+        <>
+          {isGlossPage ? (
+            <div className="relative">
+              <Navbar onOpenAdmin={onOpenAdmin} isGlossPage={true} />
+              <GlossStore />
+            </div>
+          ) : (
+            <LandingPage onOpenAdmin={onOpenAdmin} content={content} />
+          )}
+        </>
       ) : (
         // Fallback empty div to prevent layout shift while loading if preloader is active
         <div className="h-screen w-full bg-brand-dark" />

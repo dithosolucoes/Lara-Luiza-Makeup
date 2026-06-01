@@ -32,7 +32,8 @@ type EditorSection =
   | 'imageFeedbacks'
   | 'faq'
   | 'location'
-  | 'footer';
+  | 'footer'
+  | 'glossStore';
 
 const GalleryManager = ({ content, updateContent }: { content: any, updateContent: any }) => {
     const [filter, setFilter] = useState('all');
@@ -437,6 +438,7 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
     { id: 'faq', label: 'Perguntas (FAQ)', icon: CheckCircle2 },
     { id: 'location', label: 'Localização & Contato', icon: MapPin },
     { id: 'footer', label: 'Rodapé', icon: Type },
+    { id: 'glossStore', label: 'Loja Gloss', icon: ImageIcon },
   ];
 
   const handleSave = async () => {
@@ -1155,6 +1157,87 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                     <InputGroup label="Link Instagram Artístico" value={content.footer.instagramArt} onChange={(v) => updateNestedContent(['footer', 'instagramArt'], v)} />
                     <InputGroup label="Texto Botão Flutuante" value={content.footer.floatingCtaText} onChange={(v) => updateNestedContent(['footer', 'floatingCtaText'], v)} />
                 </>
+            )}
+
+            {/* 13. LOJA GLOSS */}
+            {editorSection === 'glossStore' && (
+                <div>
+                     <h3 className="font-serif text-xl mb-6 text-brand-gold">Imagens - Hibisco</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                         {content.glossStore?.hibiscoImages?.map((img: any, idx: number) => (
+                             <div key={`hibisco-${idx}`} className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-white/10 bg-brand-dark">
+                                 <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                     <div className="p-1 bg-white/10 rounded hover:bg-white/20 w-full px-4">
+                                         <ImageUpload label="" preview={img.url} onChange={(url) => {
+                                             const newItems = [...(content.glossStore?.hibiscoImages || [])];
+                                             newItems[idx].url = url;
+                                             updateNestedContent(['glossStore', 'hibiscoImages'], newItems);
+                                         }} />
+                                     </div>
+                                     <button 
+                                         onClick={() => {
+                                             const newItems = content.glossStore.hibiscoImages.filter((_: any, i: number) => i !== idx);
+                                             updateNestedContent(['glossStore', 'hibiscoImages'], newItems);
+                                         }}
+                                         className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                                     >
+                                         <Trash2 size={14} />
+                                     </button>
+                                 </div>
+                             </div>
+                         ))}
+                         <button 
+                             onClick={() => {
+                                 const placeholderUrl = "https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=1780&auto=format&fit=crop";
+                                 const newItems = [...(content.glossStore?.hibiscoImages || []), { url: placeholderUrl, title: '', desc: '', category: 'gloss' }];
+                                 updateNestedContent(['glossStore', 'hibiscoImages'], newItems);
+                             }}
+                             className="aspect-[3/4] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/40 hover:text-brand-gold hover:border-brand-gold/50 transition-all"
+                         >
+                             <Plus size={24} />
+                             <span className="text-[10px] uppercase tracking-widest font-bold text-center px-2">Nova Imagem</span>
+                         </button>
+                     </div>
+
+                     <h3 className="font-serif text-xl mb-6 text-brand-gold">Imagens - Peônia</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                         {content.glossStore?.peoniaImages?.map((img: any, idx: number) => (
+                             <div key={`peonia-${idx}`} className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-white/10 bg-brand-dark">
+                                 <img src={img.url} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
+                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                                     <div className="p-1 bg-white/10 rounded hover:bg-white/20 w-full px-4">
+                                         <ImageUpload label="" preview={img.url} onChange={(url) => {
+                                             const newItems = [...(content.glossStore?.peoniaImages || [])];
+                                             newItems[idx].url = url;
+                                             updateNestedContent(['glossStore', 'peoniaImages'], newItems);
+                                         }} />
+                                     </div>
+                                     <button 
+                                         onClick={() => {
+                                             const newItems = content.glossStore.peoniaImages.filter((_: any, i: number) => i !== idx);
+                                             updateNestedContent(['glossStore', 'peoniaImages'], newItems);
+                                         }}
+                                         className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"
+                                     >
+                                         <Trash2 size={14} />
+                                     </button>
+                                 </div>
+                             </div>
+                         ))}
+                         <button 
+                             onClick={() => {
+                                 const placeholderUrl = "https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=1915&auto=format&fit=crop";
+                                 const newItems = [...(content.glossStore?.peoniaImages || []), { url: placeholderUrl, title: '', desc: '', category: 'gloss' }];
+                                 updateNestedContent(['glossStore', 'peoniaImages'], newItems);
+                             }}
+                             className="aspect-[3/4] rounded-xl border border-dashed border-white/20 flex flex-col items-center justify-center gap-2 text-white/40 hover:text-brand-gold hover:border-brand-gold/50 transition-all"
+                         >
+                             <Plus size={24} />
+                             <span className="text-[10px] uppercase tracking-widest font-bold text-center px-2">Nova Imagem</span>
+                         </button>
+                     </div>
+                </div>
             )}
 
         </div>

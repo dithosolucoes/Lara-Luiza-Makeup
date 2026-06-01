@@ -138,6 +138,7 @@ export const FAQ: FaqItem[] = [
 ];
 
 export const NAVIGATION = [
+  { label: 'Loja', href: '#/loja' },
   { label: 'O Conceito', href: '#concept' },
   { label: 'Pele Blindada', href: '#shield' },
   { label: 'Serviços', href: '#services' },

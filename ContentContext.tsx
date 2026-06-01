@@ -133,6 +133,18 @@ const defaultContent: ContentState = {
     instagramMain: 'https://instagram.com/laraluizamakeup_',
     instagramArt: 'https://instagram.com/laraluizaart',
     floatingCtaText: 'Online'
+  },
+  glossStore: {
+    hibiscoImages: [
+      { url: 'https://images.unsplash.com/photo-1629198688000-71f23e745b6e?q=80&w=1780&auto=format&fit=crop', title: '', desc: '', category: 'gloss' },
+      { url: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=2000&auto=format&fit=crop', title: '', desc: '', category: 'gloss' },
+      { url: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6ece?q=80&w=1974&auto=format&fit=crop', title: '', desc: '', category: 'gloss' }
+    ],
+    peoniaImages: [
+      { url: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=1915&auto=format&fit=crop', title: '', desc: '', category: 'gloss' },
+      { url: 'https://images.unsplash.com/photo-1599305090598-fe179d501227?q=80&w=2024&auto=format&fit=crop', title: '', desc: '', category: 'gloss' },
+      { url: 'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=1953&auto=format&fit=crop', title: '', desc: '', category: 'gloss' }
+    ]
   }
 };
 

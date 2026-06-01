@@ -148,4 +148,8 @@ export interface ContentState {
     instagramArt: string;
     floatingCtaText: string;
   };
+  glossStore: {
+    hibiscoImages: GalleryImage[];
+    peoniaImages: GalleryImage[];
+  };
 }
