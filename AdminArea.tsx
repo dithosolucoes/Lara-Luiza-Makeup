@@ -1162,7 +1162,29 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {/* 13. LOJA GLOSS */}
             {editorSection === 'glossStore' && (
                 <div>
-                     <h3 className="font-serif text-xl mb-6 text-brand-gold">Imagens - Hibisco</h3>
+                     <div className="mb-12 p-6 rounded-xl border border-brand-gold/20 bg-brand-dark/50">
+                         <h3 className="font-serif text-xl mb-6 text-brand-gold">Imagens de Fundo (Home)</h3>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                             <div>
+                                 <h4 className="text-white/70 mb-4 font-bold tracking-widest text-sm uppercase">Fundo - Hibisco</h4>
+                                 <ImageUpload 
+                                    label="Imagem de Fundo Hibisco" 
+                                    preview={content.glossStore?.hibiscoHomeBg || ''} 
+                                    onChange={(url) => updateNestedContent(['glossStore', 'hibiscoHomeBg'], url)} 
+                                 />
+                             </div>
+                             <div>
+                                 <h4 className="text-white/70 mb-4 font-bold tracking-widest text-sm uppercase">Fundo - Peônia</h4>
+                                 <ImageUpload 
+                                    label="Imagem de Fundo Peônia" 
+                                    preview={content.glossStore?.peoniaHomeBg || ''} 
+                                    onChange={(url) => updateNestedContent(['glossStore', 'peoniaHomeBg'], url)} 
+                                 />
+                             </div>
+                         </div>
+                     </div>
+
+                     <h3 className="font-serif text-xl mb-6 text-brand-gold">Imagens da Galeria (Interna) - Hibisco</h3>
                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                          {content.glossStore?.hibiscoImages?.map((img: any, idx: number) => (
                              <div key={`hibisco-${idx}`} className="group relative aspect-[3/4] rounded-xl overflow-hidden border border-white/10 bg-brand-dark">

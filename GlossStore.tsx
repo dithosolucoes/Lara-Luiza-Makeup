@@ -173,6 +173,13 @@ export const GlossStore = () => {
     return content.glossStore?.peoniaImages?.map((i: any) => i.url) || glossData.peonia.images;
   };
 
+  const getHomeBg = (type: 'hibisco' | 'peonia') => {
+    if (type === 'hibisco') {
+        return content.glossStore?.hibiscoHomeBg || getImages('hibisco')[0];
+    }
+    return content.glossStore?.peoniaHomeBg || getImages('peonia')[0];
+  };
+
   return (
     <div 
       className="relative w-full h-[100dvh] overflow-hidden selection:bg-brand-gold selection:text-black font-sans bg-black"
@@ -193,30 +200,38 @@ export const GlossStore = () => {
          </p>
       </div>
 
-      {/* Base Layer: Peônia (White background, Black text) */}
-      <div className="absolute inset-0 w-full h-full bg-white text-black flex items-center pt-20">
+      {/* Base Layer: Peônia (Cover Image) */}
+      <div className="absolute inset-0 w-full h-full text-white flex items-center pt-20">
+         <div className="absolute inset-0 bg-black">
+           <img src={getHomeBg('peonia')} alt="Peônia Fundo" className="w-full h-full object-contain opacity-80" />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60" />
+         </div>
          <div 
-           className="absolute right-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center"
+           className="absolute right-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center z-10"
            style={{ opacity: selected ? 0 : 1, pointerEvents: selected ? 'none' : 'auto' }}
          >
-            <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-gray-400 font-bold mb-3 md:mb-4 block">Descubra a delicadeza</span>
-            <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4" style={{color: glossData.peonia.color}}>PEÔNIA</h2>
-            <p className="text-gray-500 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed">Um rosa suave que realça o seu brilho natural. Perfeito para iluminar.</p>
+            <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">Descubra a delicadeza</span>
+            <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.peonia.color}}>PEÔNIA</h2>
+            <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Um rosa suave que realça o seu brilho natural. Perfeito para iluminar.</p>
          </div>
       </div>
 
-      {/* Top Layer: Hibisco (Black background, White text) - Clipped */}
+      {/* Top Layer: Hibisco (Cover Image) - Clipped */}
       <div 
-        className={`absolute inset-0 w-full h-full bg-black text-white flex items-center pt-20 shadow-[5px_0_20px_rgba(0,0,0,0.5)] ${animating ? 'transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]' : ''}`}
+        className={`absolute inset-0 w-full h-full text-white flex items-center pt-20 shadow-[5px_0_20px_rgba(0,0,0,0.5)] ${animating ? 'transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]' : ''}`}
         style={{ clipPath: `polygon(0 0, ${split}% 0, ${split}% 100%, 0 100%)` }}
       >
+         <div className="absolute inset-0 bg-black">
+           <img src={getHomeBg('hibisco')} alt="Hibisco Fundo" className="w-full h-full object-contain opacity-80" />
+           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60" />
+         </div>
          <div 
-           className="absolute left-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center"
+           className="absolute left-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center z-10"
            style={{ opacity: selected ? 0 : 1, pointerEvents: selected ? 'none' : 'auto' }}
          >
-             <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/50 font-bold mb-3 md:mb-4 block">Experimente a intensidade</span>
-             <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
-             <p className="text-white/70 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed">Um tom vibrante, autêntico e inesquecível. Para quem não tem medo de ousar.</p>
+             <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">Experimente a intensidade</span>
+             <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
+             <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Um tom vibrante, autêntico e inesquecível. Para quem não tem medo de ousar.</p>
          </div>
       </div>
 

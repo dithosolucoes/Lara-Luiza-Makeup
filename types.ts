@@ -151,5 +151,7 @@ export interface ContentState {
   glossStore: {
     hibiscoImages: GalleryImage[];
     peoniaImages: GalleryImage[];
+    hibiscoHomeBg?: string;
+    peoniaHomeBg?: string;
   };
 }
