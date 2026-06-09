@@ -22,7 +22,7 @@ const glossData = {
     name: 'Peônia',
     color: '#E58EB0',
     bgColor: '#ffffff',
-    textColor: '#000000',
+    textColor: '#ffffff',
     images: [
       'https://images.unsplash.com/photo-1586495777744-4413f21062fa?q=80&w=1915&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1599305090598-fe179d501227?q=80&w=2024&auto=format&fit=crop',
@@ -86,22 +86,6 @@ export const GlossStore = () => {
   const [selected, setSelected] = useState<'hibisco' | 'peonia' | null>(null);
   const [{ split, animating }, setSplitState] = useState({ split: 50, animating: false });
   const containerRef = useRef<HTMLDivElement>(null);
-  const dragTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  const clearSelectionTimer = () => {
-    if (dragTimerRef.current) {
-      clearTimeout(dragTimerRef.current);
-      dragTimerRef.current = null;
-    }
-  };
-
-  const startSelectionTimer = (color: 'hibisco' | 'peonia') => {
-    if (dragTimerRef.current) return;
-    dragTimerRef.current = setTimeout(() => {
-      setSelected(color);
-      clearSelectionTimer();
-    }, 1000);
-  };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (selected || animating) return;
@@ -110,26 +94,16 @@ export const GlossStore = () => {
     const x = e.clientX - left;
     const percentage = Math.max(0, Math.min((x / width) * 100, 100));
     setSplitState({ split: percentage, animating: false });
-
-    if (percentage < 5) {
-      startSelectionTimer('peonia');
-    } else if (percentage > 95) {
-      startSelectionTimer('hibisco');
-    } else {
-      clearSelectionTimer();
-    }
   };
 
   const handlePointerLeave = () => {
     if (selected || animating) return;
-    clearSelectionTimer();
     setSplitState({ split: 50, animating: true });
     setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 500);
   };
 
   const handlePointerUp = () => {
     if (selected || animating) return;
-    clearSelectionTimer();
     // On mobile touch end, spring back to 50
     setSplitState({ split: 50, animating: true });
     setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 500);
@@ -160,7 +134,6 @@ export const GlossStore = () => {
       const timer = setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 700);
       return () => clearTimeout(timer);
     }
-    return clearSelectionTimer;
   }, [selected]);
 
   const activeData = selected ? glossData[selected] : null;
@@ -301,6 +274,7 @@ export const GlossStore = () => {
                    </div>
 
                    <motion.button 
+                     onClick={() => window.open(content.navbar.ctaLink, '_blank')}
                      whileHover={{ scale: 1.02 }}
                      whileTap={{ scale: 0.98 }}
                      className="mt-12 px-10 py-5 font-bold uppercase tracking-widest text-sm transition-transform rounded-full flex items-center justify-center gap-3 w-full max-w-md shadow-2xl"
