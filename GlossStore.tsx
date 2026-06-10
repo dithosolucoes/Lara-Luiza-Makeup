@@ -15,7 +15,7 @@ const glossData = {
       'https://images.unsplash.com/photo-1596462502278-27bfdc403348?q=80&w=2000&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6ece?q=80&w=1974&auto=format&fit=crop'
     ],
-    description: 'Experimente a intensidade do Hibisco. Um tom vibrante e autêntico.',
+    description: 'Realça a beleza dos lábios com um toque de cor suave e natural. Perfeito para o dia a dia, com um efeito saudável e radiante.',
   },
   peonia: {
     id: 'peonia',
@@ -28,7 +28,7 @@ const glossData = {
       'https://images.unsplash.com/photo-1599305090598-fe179d501227?q=80&w=2024&auto=format&fit=crop',
       'https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=1953&auto=format&fit=crop'
     ],
-    description: 'A delicadeza da Peônia. Um rosa suave que realça o seu brilho natural.',
+    description: 'Um rosa mais frio e translúcido que ilumina com delicadeza e elegância.',
   }
 };
 
@@ -104,9 +104,16 @@ export const GlossStore = () => {
 
   const handlePointerUp = () => {
     if (selected || animating) return;
-    // On mobile touch end, spring back to 50
-    setSplitState({ split: 50, animating: true });
-    setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 500);
+    
+    if (split > 85) {
+      setSelected('peonia');
+    } else if (split < 15) {
+      setSelected('hibisco');
+    } else {
+      // On mobile touch end, spring back to 50
+      setSplitState({ split: 50, animating: true });
+      setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 500);
+    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -118,17 +125,17 @@ export const GlossStore = () => {
     
     // Explicit click on the halves
     if (percentage < 50) {
-      setSelected('hibisco');
-    } else {
       setSelected('peonia');
+    } else {
+      setSelected('hibisco');
     }
   };
 
   useEffect(() => {
-    if (selected === 'hibisco') {
-      setSplitState({ split: 100, animating: true });
-    } else if (selected === 'peonia') {
-      setSplitState({ split: 0, animating: true });
+    if (selected === 'peonia') {
+      setSplitState({ split: 100, animating: true }); // Peônia is top layer, fill it entirely
+    } else if (selected === 'hibisco') {
+      setSplitState({ split: 0, animating: true }); // Hibisco is base layer, hide top layer
     } else {
       setSplitState({ split: 50, animating: true });
       const timer = setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 700);
@@ -173,38 +180,38 @@ export const GlossStore = () => {
          </p>
       </div>
 
-      {/* Base Layer: Peônia (Cover Image) */}
+      {/* Base Layer: Hibisco (Cover Image) */}
       <div className="absolute inset-0 w-full h-full text-white flex items-center pt-20">
          <div className="absolute inset-0 bg-black">
-           <img src={getHomeBg('peonia')} alt="Peônia Fundo" className="w-full h-full object-contain opacity-80" />
+           <img src={getHomeBg('hibisco')} alt="Hibisco Fundo" className="w-full h-full object-contain opacity-80" />
            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60" />
          </div>
          <div 
            className="absolute right-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center z-10"
            style={{ opacity: selected ? 0 : 1, pointerEvents: selected ? 'none' : 'auto' }}
          >
-            <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">Descubra a delicadeza</span>
-            <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.peonia.color}}>PEÔNIA</h2>
-            <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Um rosa suave que realça o seu brilho natural. Perfeito para iluminar.</p>
+             <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">Experimente a intensidade</span>
+             <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
+             <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Realça a beleza dos lábios com um toque de cor suave e natural. Perfeito para o dia a dia, com um efeito saudável e radiante.</p>
          </div>
       </div>
 
-      {/* Top Layer: Hibisco (Cover Image) - Clipped */}
+      {/* Top Layer: Peônia (Cover Image) - Clipped */}
       <div 
         className={`absolute inset-0 w-full h-full text-white flex items-center pt-20 shadow-[5px_0_20px_rgba(0,0,0,0.5)] ${animating ? 'transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]' : ''}`}
         style={{ clipPath: `polygon(0 0, ${split}% 0, ${split}% 100%, 0 100%)` }}
       >
          <div className="absolute inset-0 bg-black">
-           <img src={getHomeBg('hibisco')} alt="Hibisco Fundo" className="w-full h-full object-contain opacity-80" />
+           <img src={getHomeBg('peonia')} alt="Peônia Fundo" className="w-full h-full object-contain opacity-80" />
            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60" />
          </div>
          <div 
            className="absolute left-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center z-10"
            style={{ opacity: selected ? 0 : 1, pointerEvents: selected ? 'none' : 'auto' }}
          >
-             <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">Experimente a intensidade</span>
-             <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
-             <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Um tom vibrante, autêntico e inesquecível. Para quem não tem medo de ousar.</p>
+            <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">ROSA TRANSLÚCIDO E FRIO</span>
+            <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.peonia.color}}>PEÔNIA</h2>
+            <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Um rosa mais frio e translúcido que ilumina com delicadeza e elegância.</p>
          </div>
       </div>
 
@@ -232,7 +239,7 @@ export const GlossStore = () => {
              animate={{ opacity: 1, scale: 1 }}
              exit={{ opacity: 0, scale: 0.95 }}
              transition={{ duration: 0.5, delay: 0.2 }}
-             className="absolute inset-0 z-20 flex flex-col items-center pt-28 px-6 overflow-y-auto pb-12"
+             className="absolute inset-0 z-20 flex flex-col items-center pt-28 px-6 overflow-y-auto pb-12 bg-black/60 backdrop-blur-[2px]"
              style={{ color: activeData.textColor }}
           >
              <button 
