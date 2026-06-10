@@ -86,6 +86,22 @@ export const GlossStore = () => {
   const [selected, setSelected] = useState<'hibisco' | 'peonia' | null>(null);
   const [{ split, animating }, setSplitState] = useState({ split: 50, animating: false });
   const containerRef = useRef<HTMLDivElement>(null);
+  const dragTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const clearSelectionTimer = () => {
+    if (dragTimerRef.current) {
+      clearTimeout(dragTimerRef.current);
+      dragTimerRef.current = null;
+    }
+  };
+
+  const startSelectionTimer = (color: 'hibisco' | 'peonia') => {
+    if (dragTimerRef.current) return;
+    dragTimerRef.current = setTimeout(() => {
+      setSelected(color);
+      clearSelectionTimer();
+    }, 400);
+  };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (selected || animating) return;
@@ -94,16 +110,26 @@ export const GlossStore = () => {
     const x = e.clientX - left;
     const percentage = Math.max(0, Math.min((x / width) * 100, 100));
     setSplitState({ split: percentage, animating: false });
+
+    if (percentage > 90) {
+      startSelectionTimer('peonia');
+    } else if (percentage < 10) {
+      startSelectionTimer('hibisco');
+    } else {
+      clearSelectionTimer();
+    }
   };
 
   const handlePointerLeave = () => {
     if (selected || animating) return;
+    clearSelectionTimer();
     setSplitState({ split: 50, animating: true });
     setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 500);
   };
 
   const handlePointerUp = () => {
     if (selected || animating) return;
+    clearSelectionTimer();
     
     if (split > 85) {
       setSelected('peonia');
@@ -139,7 +165,10 @@ export const GlossStore = () => {
     } else {
       setSplitState({ split: 50, animating: true });
       const timer = setTimeout(() => setSplitState(s => ({ ...s, animating: false })), 700);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearSelectionTimer();
+      };
     }
   }, [selected]);
 
@@ -187,12 +216,15 @@ export const GlossStore = () => {
            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60" />
          </div>
          <div 
-           className="absolute right-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center z-10"
-           style={{ opacity: selected ? 0 : 1, pointerEvents: selected ? 'none' : 'auto' }}
+           className="absolute right-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 text-center z-10 transition-opacity duration-200"
+           style={{ 
+             opacity: selected ? 0 : Math.min(1, Math.max(0, 1 - (split - 50) / 15)), 
+             pointerEvents: selected ? 'none' : 'auto' 
+           }}
          >
-             <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">Experimente a intensidade</span>
-             <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
-             <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Realça a beleza dos lábios com um toque de cor suave e natural. Perfeito para o dia a dia, com um efeito saudável e radiante.</p>
+             <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[10px] md:text-xs text-white/70 font-bold mb-3 block">Experimente a intensidade</span>
+             <h2 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-serif italic mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
+             <p className="text-white/80 max-w-[160px] sm:max-w-[220px] md:max-w-sm mx-auto text-xs sm:text-sm md:text-base leading-snug md:leading-relaxed drop-shadow-md">Realça a beleza dos lábios com um toque de cor suave e natural. Perfeito para o dia a dia, com um efeito saudável e radiante.</p>
          </div>
       </div>
 
@@ -206,12 +238,15 @@ export const GlossStore = () => {
            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/60" />
          </div>
          <div 
-           className="absolute left-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 transition-opacity duration-500 text-center z-10"
-           style={{ opacity: selected ? 0 : 1, pointerEvents: selected ? 'none' : 'auto' }}
+           className="absolute left-0 w-[50vw] h-full flex flex-col justify-center items-center px-4 md:px-6 text-center z-10 transition-opacity duration-200"
+           style={{ 
+             opacity: selected ? 0 : Math.min(1, Math.max(0, 1 - (50 - split) / 15)), 
+             pointerEvents: selected ? 'none' : 'auto' 
+           }}
          >
-            <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[8px] md:text-xs text-white/70 font-bold mb-3 md:mb-4 block">ROSA TRANSLÚCIDO E FRIO</span>
-            <h2 className="text-4xl sm:text-6xl md:text-8xl lg:text-9xl font-serif italic mb-3 md:mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.peonia.color}}>PEÔNIA</h2>
-            <p className="text-white/80 max-w-[150px] sm:max-w-[200px] md:max-w-sm mx-auto text-[10px] sm:text-xs md:text-base leading-tight md:leading-relaxed drop-shadow-md">Um rosa mais frio e translúcido que ilumina com delicadeza e elegância.</p>
+            <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[10px] md:text-xs text-white/70 font-bold mb-3 block">ROSA TRANSLÚCIDO E FRIO</span>
+            <h2 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-serif italic mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.peonia.color}}>PEÔNIA</h2>
+            <p className="text-white/80 max-w-[160px] sm:max-w-[220px] md:max-w-sm mx-auto text-xs sm:text-sm md:text-base leading-snug md:leading-relaxed drop-shadow-md">Um rosa mais frio e translúcido que ilumina com delicadeza e elegância.</p>
          </div>
       </div>
 
