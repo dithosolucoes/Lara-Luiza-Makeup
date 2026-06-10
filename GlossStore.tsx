@@ -222,8 +222,7 @@ export const GlossStore = () => {
              pointerEvents: selected ? 'none' : 'auto' 
            }}
          >
-             <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[10px] md:text-xs text-white/70 font-bold mb-3 block">Experimente a intensidade</span>
-             <h2 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-serif italic mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
+            <h2 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-serif italic mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.hibisco.color}}>HIBISCO</h2>
              <p className="text-white/80 max-w-[160px] sm:max-w-[220px] md:max-w-sm mx-auto text-xs sm:text-sm md:text-base leading-snug md:leading-relaxed drop-shadow-md">Realça a beleza dos lábios com um toque de cor suave e natural. Perfeito para o dia a dia, com um efeito saudável e radiante.</p>
          </div>
       </div>
@@ -244,7 +243,6 @@ export const GlossStore = () => {
              pointerEvents: selected ? 'none' : 'auto' 
            }}
          >
-            <span className="uppercase tracking-[0.2em] md:tracking-[0.4em] text-[10px] md:text-xs text-white/70 font-bold mb-3 block">ROSA TRANSLÚCIDO E FRIO</span>
             <h2 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-serif italic mb-4 drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]" style={{color: glossData.peonia.color}}>PEÔNIA</h2>
             <p className="text-white/80 max-w-[160px] sm:max-w-[220px] md:max-w-sm mx-auto text-xs sm:text-sm md:text-base leading-snug md:leading-relaxed drop-shadow-md">Um rosa mais frio e translúcido que ilumina com delicadeza e elegância.</p>
          </div>
