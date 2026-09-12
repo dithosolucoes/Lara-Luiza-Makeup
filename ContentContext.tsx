@@ -175,7 +175,18 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .single();
 
       if (data && data.content) {
-        setContent((prev) => ({ ...prev, ...data.content }));
+        setContent((prev) => {
+          // Deep merge each section to ensure nested properties (like bgImage, bgImageMobile, etc.) are fully updated
+          const merged: any = { ...prev };
+          for (const key of Object.keys(data.content)) {
+            if (typeof data.content[key] === 'object' && data.content[key] !== null && !Array.isArray(data.content[key])) {
+              merged[key] = { ...(merged[key] || {}), ...data.content[key] };
+            } else {
+              merged[key] = data.content[key];
+            }
+          }
+          return merged;
+        });
       }
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -210,12 +221,14 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const saveToSupabase = async () => {
     try {
-        // We use upsert to always keep one main record or create a new version row
+        // We use insert to keep version row
         const { error } = await supabase
             .from('site_content')
-            .insert([{ content: content }]); // Insert new row for history (optional) or use upsert for single row
+            .insert([{ content: content }]);
         
         if (error) throw error;
+        // Immediately reload from Supabase to ensure fresh state synchronization
+        await fetchContent();
         return true;
     } catch (e) {
         console.error(e);

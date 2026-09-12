@@ -16,6 +16,7 @@ import { supabase } from './App';
 
 interface AdminProps {
   onLogout: () => void;
+  onNavigateToSite?: () => void;
 }
 
 type EditorSection = 
@@ -329,7 +330,7 @@ const GalleryManager = ({ content, updateContent }: { content: any, updateConten
     );
 };
 
-export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
+export const AdminArea: React.FC<AdminProps> = ({ onLogout, onNavigateToSite }) => {
   const [activeTab, setActiveTab] = useState<'dash' | 'editor' | 'media' | 'qr' | 'dns'>(() => {
     const savedTab = localStorage.getItem('admin_active_tab');
     return (savedTab as 'dash' | 'editor' | 'media' | 'qr' | 'dns') || 'dash';
@@ -587,8 +588,20 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {editorSection === 'hero' && (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ImageUpload label="Imagem de Fundo (Desktop)" preview={content.hero.bgImage} onChange={(v) => updateNestedContent(['hero', 'bgImage'], v)} />
-                        <ImageUpload label="Imagem de Fundo (Mobile)" preview={content.hero.bgImageMobile || content.hero.bgImage} onChange={(v) => updateNestedContent(['hero', 'bgImageMobile'], v)} />
+                        <ImageUpload 
+                            label="Imagem de Fundo (Desktop)" 
+                            preview={content.hero.bgImage} 
+                            onChange={(v) => {
+                                updateNestedContent(['hero', 'bgImage'], v);
+                                // Sincroniza também a versão mobile para garantir que atualize em ambos
+                                updateNestedContent(['hero', 'bgImageMobile'], v);
+                            }} 
+                        />
+                        <ImageUpload 
+                            label="Imagem de Fundo (Mobile - Opcional)" 
+                            preview={content.hero.bgImageMobile || content.hero.bgImage} 
+                            onChange={(v) => updateNestedContent(['hero', 'bgImageMobile'], v)} 
+                        />
                     </div>
                     <InputGroup label="Título Principal" value={content.hero.title} onChange={(v) => updateNestedContent(['hero', 'title'], v)} />
                     <InputGroup label="Destaque do Título (Rose)" value={content.hero.titleHighlight} onChange={(v) => updateNestedContent(['hero', 'titleHighlight'], v)} />
@@ -611,8 +624,19 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                 <>
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="w-full md:w-1/3 space-y-4">
-                            <ImageUpload label="Imagem Lateral (Desktop)" preview={content.concept.image} onChange={(v) => updateNestedContent(['concept', 'image'], v)} />
-                            <ImageUpload label="Imagem Lateral (Mobile)" preview={content.concept.imageMobile || content.concept.image} onChange={(v) => updateNestedContent(['concept', 'imageMobile'], v)} />
+                            <ImageUpload 
+                                label="Imagem Lateral (Desktop)" 
+                                preview={content.concept.image} 
+                                onChange={(v) => {
+                                    updateNestedContent(['concept', 'image'], v);
+                                    updateNestedContent(['concept', 'imageMobile'], v);
+                                }} 
+                            />
+                            <ImageUpload 
+                                label="Imagem Lateral (Mobile - Opcional)" 
+                                preview={content.concept.imageMobile || content.concept.image} 
+                                onChange={(v) => updateNestedContent(['concept', 'imageMobile'], v)} 
+                            />
                         </div>
                         <div className="w-full md:w-2/3 space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -933,8 +957,19 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             {editorSection === 'about' && (
                  <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <ImageUpload label="Foto de Perfil (Desktop)" preview={content.about.image} onChange={(v) => updateNestedContent(['about', 'image'], v)} />
-                        <ImageUpload label="Foto de Perfil (Mobile)" preview={content.about.imageMobile || content.about.image} onChange={(v) => updateNestedContent(['about', 'imageMobile'], v)} />
+                        <ImageUpload 
+                            label="Foto de Perfil (Desktop)" 
+                            preview={content.about.image} 
+                            onChange={(v) => {
+                                updateNestedContent(['about', 'image'], v);
+                                updateNestedContent(['about', 'imageMobile'], v);
+                            }} 
+                        />
+                        <ImageUpload 
+                            label="Foto de Perfil (Mobile - Opcional)" 
+                            preview={content.about.imageMobile || content.about.image} 
+                            onChange={(v) => updateNestedContent(['about', 'imageMobile'], v)} 
+                        />
                     </div>
                     <InputGroup label="Título da Seção" value={content.about.title} onChange={(v) => updateNestedContent(['about', 'title'], v)} />
                     <div className="space-y-2">
@@ -1293,13 +1328,25 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
           ))}
         </nav>
 
-        <button 
-          onClick={onLogout}
-          className="mt-10 flex items-center gap-4 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-xl transition-all opacity-60 hover:opacity-100"
-        >
-          <LogOut size={20} />
-          <span className="text-sm uppercase tracking-widest">Sair</span>
-        </button>
+        <div className="mt-auto pt-4 space-y-2">
+          {onNavigateToSite && (
+            <button 
+              onClick={onNavigateToSite}
+              className="w-full flex items-center gap-4 px-4 py-3 text-brand-gold hover:bg-brand-gold/10 rounded-xl transition-all font-medium text-left cursor-pointer border border-brand-gold/20 hover:border-brand-gold/50"
+            >
+              <ExternalLink size={20} />
+              <span className="text-sm uppercase tracking-widest">Ver Site</span>
+            </button>
+          )}
+
+          <button 
+            onClick={onLogout}
+            className="w-full flex items-center gap-4 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-xl transition-all opacity-60 hover:opacity-100"
+          >
+            <LogOut size={20} />
+            <span className="text-sm uppercase tracking-widest">Sair</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}
@@ -1314,7 +1361,10 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
             </h1>
           </div>
           <div className="hidden md:flex items-center gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full text-[10px] uppercase tracking-widest font-bold transition-all border border-white/5 hover:border-white/20">
+            <button 
+                onClick={onNavigateToSite}
+                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-brand-gold hover:text-brand-dark rounded-full text-[10px] uppercase tracking-widest font-bold transition-all border border-white/5 hover:border-brand-gold cursor-pointer"
+            >
                 <ExternalLink size={12} /> Ver Site Online
             </button>
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-gold to-brand-rose p-[1px]">
@@ -1557,6 +1607,18 @@ export const AdminArea: React.FC<AdminProps> = ({ onLogout }) => {
                             </button>
                         ))}
                         <div className="h-[1px] bg-white/5 my-2" />
+                        {onNavigateToSite && (
+                            <button 
+                                onClick={() => {
+                                    setIsMobileMenuOpen(false);
+                                    onNavigateToSite();
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-brand-gold hover:bg-brand-gold/10 rounded-xl transition-all text-left"
+                            >
+                                <ExternalLink size={16} />
+                                <span className="text-xs uppercase tracking-widest">Ver Site</span>
+                            </button>
+                        )}
                         <button 
                             onClick={onLogout}
                             className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/10 rounded-xl transition-all text-left"

@@ -1386,14 +1386,17 @@ const App: React.FC = () => {
         />
       )}
       {view === 'admin_panel' && isLoggedIn && (
-        <AdminArea onLogout={async () => { 
+        <AdminArea 
+          onNavigateToSite={() => setView('public')}
+          onLogout={async () => { 
             await supabase.auth.signOut();
             setIsLoggedIn(false); 
             setView('public'); 
             localStorage.removeItem('app_is_logged_in');
             localStorage.removeItem('app_view');
             localStorage.removeItem('admin_active_tab'); // Clear admin tab preference
-        }} />
+          }} 
+        />
       )}
       {view === 'admin_panel' && !isLoggedIn && (
         <AdminLogin 
