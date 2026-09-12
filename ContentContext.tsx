@@ -119,11 +119,11 @@ const defaultContent: ContentState = {
   },
   location: {
     subtitle: 'Localização',
-    title: 'Visite-nos no Lourdes',
-    address: 'Rua Alvarenga Peixoto, 575 - Lourdes',
+    title: 'Visite-nos no Hair Squad',
+    address: 'Rua Francisco Deslandes, 103 - Anchieta, BH - MG',
     whatsappDisplay: '(38) 992210136',
     instagramDisplay: '@laraluizamakeup_',
-    mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3750.840733036667!2d-43.9452296!3d-19.9304907!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xa6999086968037%3A0x6a0537f5979f4d7b!2sR.%20Alvarenga%20Peixoto%2C%20575%20-%20Lourdes%2C%20Belo%20Horizonte%20-%20MG%2C%2030180-120!5e0!3m2!1spt-BR!2sbr!4v1714850000000!5m2!1spt-BR!2sbr',
+    mapUrl: 'https://maps.google.com/maps?q=Rua%20Francisco%20Deslandes,%20103,%20Anchieta,%20Belo%20Horizonte&t=&z=15&ie=UTF8&iwloc=&output=embed',
     ctaTitle: 'Pronta para brilhar?',
     ctaText: 'Seja para seu casamento, formatura ou apenas para aprender a se maquiar, estou aqui para te ouvir.',
     ctaButton: 'Falar com Lara agora'

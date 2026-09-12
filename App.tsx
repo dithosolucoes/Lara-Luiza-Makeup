@@ -14,8 +14,8 @@ import { ContentProvider, useContent } from './ContentContext';
 import { GlossStore } from './GlossStore';
 
 // Initialize Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://xjpzrdvdmusogthzypzp.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqcHpyZHZkbXVzb2d0aHp5cHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMjY4NTUsImV4cCI6MjA4NjcwMjg1NX0.HJh4nbE_vsTsP_QEUCbbJUyT13P5dGXLqfyf5Iop39Y';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://arpmhgljzmxqdhjefvfl.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFycG1oZ2xqem14cWRoamVmdmZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkxODEyNjAsImV4cCI6MjEwNDc1NzI2MH0.oh0aUn_xURS-FFjxVsiE5kYAlXTCyy0TAHTZmBitT0s';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const trackWhatsAppClick = async () => {
